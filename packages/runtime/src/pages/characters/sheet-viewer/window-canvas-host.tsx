@@ -159,6 +159,8 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     scrollH: number;
   } | null>(null);
 
+  const [nonFitScrollH, setNonFitScrollH] = useState<number | null>(null);
+
   const [editorGridSize, setEditorGridSize] = useState(readStoredWindowEditorGrid);
   const [snapToGrid, setSnapToGrid] = useState(readInitialSnapToGrid);
   const [canvasViewScale, setCanvasViewScale] = useState(1);
@@ -395,6 +397,69 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     });
   }, [movePreviewById, sheetFitBottomInsetPx, sheetFitToViewport, showGridToolbar, windows]);
 
+  const recomputeNonFitScroll = useCallback(() => {
+    if (sheetFitToViewport || showGridToolbar) {
+      setNonFitScrollH(null);
+      return;
+    }
+    const vp = viewportRef.current;
+    if (!vp) {
+      setNonFitScrollH(null);
+      return;
+    }
+    const vh = vp.clientHeight;
+    const pad = 12;
+    const bottomInset =
+      sheetFitBottomInsetPx > 0 && Number.isFinite(sheetFitBottomInsetPx)
+        ? sheetFitBottomInsetPx
+        : 0;
+    let maxY = -Infinity;
+    for (const w of windows) {
+      const el = windowWrapperElByIdRef.current.get(w.id);
+      const ly = movePreviewById[w.id]?.y ?? w.y;
+      const wh = el?.offsetHeight ?? FALLBACK_WINDOW_DRAG_H;
+      maxY = Math.max(maxY, ly + wh);
+    }
+    const scrollH =
+      Number.isFinite(maxY) && windows.length > 0
+        ? Math.max(vh, maxY + pad + bottomInset)
+        : null;
+    setNonFitScrollH(scrollH);
+  }, [movePreviewById, sheetFitBottomInsetPx, sheetFitToViewport, showGridToolbar, windows]);
+
+  useLayoutEffect(() => {
+    if (sheetFitToViewport || showGridToolbar) {
+      setNonFitScrollH(null);
+      return;
+    }
+    const vp = viewportRef.current;
+    if (!vp) return;
+
+    let roRaf: number | null = null;
+    const scheduleRecompute = () => {
+      if (roRaf != null) return;
+      roRaf = requestAnimationFrame(() => {
+        roRaf = null;
+        recomputeNonFitScroll();
+      });
+    };
+
+    const ro = new ResizeObserver(scheduleRecompute);
+    ro.observe(vp);
+    for (const el of windowWrapperElByIdRef.current.values()) {
+      ro.observe(el);
+    }
+
+    recomputeNonFitScroll();
+    const raf = requestAnimationFrame(() => recomputeNonFitScroll());
+
+    return () => {
+      if (roRaf != null) cancelAnimationFrame(roRaf);
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [recomputeNonFitScroll, sheetFitToViewport, showGridToolbar, windowsFitKey]);
+
   const { beginMove } = usePointerDrag({
     containerRef: canvasRootRef,
     gridSize: snapGridPixels,
@@ -608,10 +673,10 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
           ref={viewportRef}
           className={cn(
             'absolute inset-0 min-h-0',
-            sheetFitToViewport ? 'overflow-x-hidden overflow-y-auto' : 'overflow-hidden',
+            'overflow-x-hidden overflow-y-auto',
           )}>
           <div
-            className={cn(!sheetFitToViewport && 'h-full min-h-0 min-w-0')}
+            className={cn(!sheetFitToViewport && 'min-h-0 min-w-0')}
             style={
               sheetFitToViewport && sheetFitLayout
                 ? {
@@ -622,7 +687,11 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                   }
                 : sheetFitToViewport
                   ? { minWidth: '100%', minHeight: '100%', position: 'relative' }
-                  : { height: '100%', width: '100%', position: 'relative' }
+                  : {
+                      height: nonFitScrollH != null ? nonFitScrollH : '100%',
+                      width: '100%',
+                      position: 'relative',
+                    }
             }>
             <div
               ref={canvasRootRef}
