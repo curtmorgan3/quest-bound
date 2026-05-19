@@ -264,6 +264,8 @@ export type CharacterWindow = BaseDetails & {
   displayScale?: number;
   /** Stacking order on the sheet; copied from the page template `RulesetWindow.layer`. Used as CSS z-index when rendering. */
   layer?: number;
+  /** When true, the window stays fixed on screen while the character sheet scrolls. Copied from `RulesetWindow.sticky`. */
+  sticky?: boolean;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;
@@ -299,6 +301,8 @@ export type RulesetWindow = BaseDetails & {
    * on the sheet canvas; propagated to matching `CharacterWindow` rows.
    */
   layer?: number;
+  /** When true, the window stays fixed on screen while the character sheet scrolls; propagated to matching `CharacterWindow` rows. */
+  sticky?: boolean;
   /** Module origin: ruleset id, source entity id, and module name. */
   moduleId?: string;
   moduleEntityId?: string;

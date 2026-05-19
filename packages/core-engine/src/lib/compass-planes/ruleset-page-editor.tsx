@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -343,6 +344,15 @@ export const RulesetPageEditor = ({ pageId }: RulesetPageEditorProps) => {
                     <GripVertical className='size-4' aria-hidden />
                   </div>
                   <span className='min-w-0 flex-1 self-center truncate'>{w.title}</span>
+                  <label className='flex shrink-0 cursor-pointer items-center gap-1.5 self-center text-xs text-muted-foreground'>
+                    <Checkbox
+                      checked={w.sticky ?? false}
+                      onCheckedChange={(checked) =>
+                        void updateRulesetWindow(w.id, { sticky: checked === true })
+                      }
+                    />
+                    Sticky
+                  </label>
                 </div>
               ))
             )}

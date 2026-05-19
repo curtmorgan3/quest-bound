@@ -25,6 +25,7 @@ export async function syncCharacterWindowsFromRulesetWindowRow(
         isCollapsed: rw.isCollapsed,
         displayScale: rw.displayScale,
         layer: rw.layer,
+        sticky: rw.sticky,
         updatedAt: now,
       });
     }

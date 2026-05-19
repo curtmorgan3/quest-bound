@@ -1,4 +1,4 @@
 export { latestDbSchema } from './versions';
 
 // Increment on every schema change
-export const dbSchemaVersion = 69;
+export const dbSchemaVersion = 70;

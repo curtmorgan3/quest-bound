@@ -277,5 +277,10 @@ export const dbSchemaV69 = {
   documents: `${common}, rulesetId, campaignId, campaignSceneId, title, description, category, order, assetId, image, pdfAssetId, pdfData, markdownData, moduleId, [campaignSceneId]`,
 };
 
+/** Schema for v70: `sticky` boolean on ruleset/character windows (no new indexes). */
+export const dbSchemaV70 = {
+  ...dbSchemaV69,
+};
+
 // latestDbSchema should always be used for the worker thread db instance
-export const latestDbSchema = { ...dbSchemaV69 };
+export const latestDbSchema = { ...dbSchemaV70 };

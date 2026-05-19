@@ -79,6 +79,8 @@ export type WindowCanvasItem = {
   layer?: number;
   /** Tie-break when `layer` is unset (older first = further back). */
   createdAt?: string;
+  /** When true, the window stays fixed on screen while the character sheet scrolls. */
+  sticky?: boolean;
 };
 
 export type WindowCanvasHostProps<T extends WindowCanvasItem> = {
@@ -317,6 +319,16 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       return a.id.localeCompare(b.id);
     });
   }, [windows]);
+
+  const stickyCanvasWindows = useMemo(
+    () => (!showGridToolbar ? sortedCanvasWindows.filter((w) => w.sticky) : []),
+    [showGridToolbar, sortedCanvasWindows],
+  );
+
+  const nonStickyCanvasWindows = useMemo(
+    () => (!showGridToolbar ? sortedCanvasWindows.filter((w) => !w.sticky) : sortedCanvasWindows),
+    [showGridToolbar, sortedCanvasWindows],
+  );
 
   const recomputeSheetFit = useCallback(() => {
     if (!sheetFitToViewport || showGridToolbar) {
@@ -737,7 +749,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                   </div>
                 ) : null}
 
-                {sortedCanvasWindows.map((w, sortedIndex) => {
+                {nonStickyCanvasWindows.map((w, sortedIndex) => {
                   const pv = movePreviewById[w.id];
                   const layoutX = pv?.x ?? w.x;
                   const layoutY = pv?.y ?? w.y;
@@ -779,6 +791,62 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
             </div>
           </div>
         </div>
+
+        {stickyCanvasWindows.length > 0 && (
+          <div className='pointer-events-none absolute inset-0 overflow-hidden'>
+            {stickyCanvasWindows.map((w, sortedIndex) => {
+              const pv = movePreviewById[w.id];
+              const layoutX = pv?.x ?? w.x;
+              const layoutY = pv?.y ?? w.y;
+              const zPaint =
+                10 +
+                (typeof w.layer === 'number' && Number.isFinite(w.layer)
+                  ? Math.floor(w.layer)
+                  : sortedIndex);
+
+              const fit = sheetFitToViewport && sheetFitLayout ? sheetFitLayout : null;
+              const screenX = fit ? fit.tx + layoutX * fit.scale : layoutX;
+              const screenY = fit ? fit.ty + layoutY * fit.scale : layoutY;
+              const wrapperStyle = fit
+                ? {
+                    left: screenX,
+                    top: screenY,
+                    zIndex: zPaint,
+                    transform: `scale(${fit.scale})`,
+                    transformOrigin: '0 0',
+                  }
+                : { left: screenX, top: screenY, zIndex: zPaint };
+
+              return (
+                <div
+                  key={w.id}
+                  ref={(el) => {
+                    if (el) windowWrapperElByIdRef.current.set(w.id, el);
+                    else windowWrapperElByIdRef.current.delete(w.id);
+                  }}
+                  className='pointer-events-auto absolute'
+                  style={wrapperStyle}
+                  onPointerDown={(e) => {
+                    if (!locked) {
+                      setSelectedWindowId(w.id);
+                    }
+                    if (locked) return;
+                    const t = e.target as HTMLElement;
+                    if (
+                      t.closest(
+                        'a, button, input, textarea, select, label, [contenteditable="true"], [role="menuitem"], [role="option"], [role="tab"], [data-window-chrome-control]',
+                      )
+                    ) {
+                      return;
+                    }
+                    beginMove(e, { id: w.id, x: layoutX, y: layoutY });
+                  }}>
+                  {renderWindow(w, { x: layoutX, y: layoutY }, zPaint)}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </WindowCanvasSelectionContext.Provider>
   );
