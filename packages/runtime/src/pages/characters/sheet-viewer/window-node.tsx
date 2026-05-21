@@ -1,5 +1,6 @@
 import { useComponents } from '@/lib/compass-api';
 import { CharacterContext } from '@/stores';
+import type { Component } from '@/types';
 import { ExternalLink, OctagonMinus, OctagonX, Scaling } from 'lucide-react';
 import {
   useCallback,

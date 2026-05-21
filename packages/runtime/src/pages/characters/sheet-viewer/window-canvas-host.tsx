@@ -353,7 +353,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
     let maxX = -Infinity;
     let maxY = -Infinity;
 
-    for (const w of windows) {
+    for (const w of nonStickyCanvasWindows) {
       const el = windowWrapperElByIdRef.current.get(w.id);
       const lw = movePreviewById[w.id]?.x ?? w.x;
       const ly = movePreviewById[w.id]?.y ?? w.y;
@@ -372,7 +372,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       scrollW: number;
       scrollH: number;
     };
-    if (!Number.isFinite(minX) || windows.length === 0) {
+    if (!Number.isFinite(minX) || nonStickyCanvasWindows.length === 0) {
       next = {
         tx: 0,
         ty: 0,
@@ -407,7 +407,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       }
       return next;
     });
-  }, [movePreviewById, sheetFitBottomInsetPx, sheetFitToViewport, showGridToolbar, windows]);
+  }, [movePreviewById, nonStickyCanvasWindows, sheetFitBottomInsetPx, sheetFitToViewport, showGridToolbar]);
 
   const recomputeNonFitScroll = useCallback(() => {
     if (sheetFitToViewport || showGridToolbar) {
@@ -426,18 +426,18 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
         ? sheetFitBottomInsetPx
         : 0;
     let maxY = -Infinity;
-    for (const w of windows) {
+    for (const w of nonStickyCanvasWindows) {
       const el = windowWrapperElByIdRef.current.get(w.id);
       const ly = movePreviewById[w.id]?.y ?? w.y;
       const wh = el?.offsetHeight ?? FALLBACK_WINDOW_DRAG_H;
       maxY = Math.max(maxY, ly + wh);
     }
     const scrollH =
-      Number.isFinite(maxY) && windows.length > 0
+      Number.isFinite(maxY) && nonStickyCanvasWindows.length > 0
         ? Math.max(vh, maxY + pad + bottomInset)
         : null;
     setNonFitScrollH(scrollH);
-  }, [movePreviewById, sheetFitBottomInsetPx, sheetFitToViewport, showGridToolbar, windows]);
+  }, [movePreviewById, nonStickyCanvasWindows, sheetFitBottomInsetPx, sheetFitToViewport, showGridToolbar]);
 
   useLayoutEffect(() => {
     if (sheetFitToViewport || showGridToolbar) {
