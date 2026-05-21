@@ -65,6 +65,7 @@ export async function navigateCharacterToTemplatePage(
         isCollapsed: rw.isCollapsed,
         displayScale: rw.displayScale,
         layer: rw.layer,
+        sticky: rw.sticky,
         createdAt: now,
         updatedAt: now,
       });
@@ -173,6 +174,7 @@ export async function openCharacterSheetWindow(
   let isCollapsed = false;
   let displayScale: number | undefined;
   let layerFromTemplate: number | undefined;
+  let stickyFromTemplate: boolean | undefined;
 
   if (characterPage.pageId) {
     const rulesetWindow = (await db.rulesetWindows
@@ -188,6 +190,7 @@ export async function openCharacterSheetWindow(
       isCollapsed = !!rulesetWindow.isCollapsed;
       displayScale = rulesetWindow.displayScale;
       layerFromTemplate = rulesetWindow.layer;
+      stickyFromTemplate = rulesetWindow.sticky;
     }
   }
 
@@ -202,6 +205,7 @@ export async function openCharacterSheetWindow(
     isCollapsed,
     displayScale,
     layer: layerFromTemplate,
+    sticky: stickyFromTemplate,
     createdAt: now,
     updatedAt: now,
   } as CharacterWindow);

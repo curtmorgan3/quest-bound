@@ -348,12 +348,14 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
         : 0;
     const availW = Math.max(0, vw - 2 * pad);
 
+    // All windows (including sticky) determine the scale/transform so sticky windows
+    // remain visible and correctly positioned when fit-to-viewport is active.
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
 
-    for (const w of nonStickyCanvasWindows) {
+    for (const w of sortedCanvasWindows) {
       const el = windowWrapperElByIdRef.current.get(w.id);
       const lw = movePreviewById[w.id]?.x ?? w.x;
       const ly = movePreviewById[w.id]?.y ?? w.y;
@@ -365,6 +367,20 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       maxY = Math.max(maxY, ly + wh);
     }
 
+    // Non-sticky windows alone determine the scroll area so sticky windows
+    // don't inflate the scrollable content region.
+    let nsMaxX = -Infinity;
+    let nsMaxY = -Infinity;
+    for (const w of nonStickyCanvasWindows) {
+      const el = windowWrapperElByIdRef.current.get(w.id);
+      const lw = movePreviewById[w.id]?.x ?? w.x;
+      const ly = movePreviewById[w.id]?.y ?? w.y;
+      const ww = el?.offsetWidth ?? FALLBACK_WINDOW_DRAG_W;
+      const wh = el?.offsetHeight ?? FALLBACK_WINDOW_DRAG_H;
+      nsMaxX = Math.max(nsMaxX, lw + ww);
+      nsMaxY = Math.max(nsMaxY, ly + wh);
+    }
+
     let next: {
       tx: number;
       ty: number;
@@ -372,7 +388,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       scrollW: number;
       scrollH: number;
     };
-    if (!Number.isFinite(minX) || nonStickyCanvasWindows.length === 0) {
+    if (!Number.isFinite(minX) || sortedCanvasWindows.length === 0) {
       next = {
         tx: 0,
         ty: 0,
@@ -386,10 +402,15 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       const scaledW = cw * s;
       const tx = pad + (availW - scaledW) / 2 - minX * s;
       const ty = pad - minY * s;
-      const right = tx + s * maxX + pad;
-      const bottom = ty + s * maxY + pad + bottomInset;
-      const scrollW = Math.max(vw, Math.ceil(right));
-      const scrollH = Math.max(vh, Math.ceil(bottom));
+      // Scroll dimensions are based on non-sticky content only
+      const scrollRight = Number.isFinite(nsMaxX) && nonStickyCanvasWindows.length > 0
+        ? tx + s * nsMaxX + pad
+        : tx + s * maxX + pad;
+      const scrollBottom = Number.isFinite(nsMaxY) && nonStickyCanvasWindows.length > 0
+        ? ty + s * nsMaxY + pad + bottomInset
+        : ty + s * maxY + pad + bottomInset;
+      const scrollW = Math.max(vw, Math.ceil(scrollRight));
+      const scrollH = Math.max(vh, Math.ceil(scrollBottom));
       next = { tx, ty, scale: s, scrollW, scrollH };
     }
 
@@ -407,7 +428,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       }
       return next;
     });
-  }, [movePreviewById, nonStickyCanvasWindows, sheetFitBottomInsetPx, sheetFitToViewport, showGridToolbar]);
+  }, [movePreviewById, sortedCanvasWindows, nonStickyCanvasWindows, sheetFitBottomInsetPx, sheetFitToViewport, showGridToolbar]);
 
   const recomputeNonFitScroll = useCallback(() => {
     if (sheetFitToViewport || showGridToolbar) {
