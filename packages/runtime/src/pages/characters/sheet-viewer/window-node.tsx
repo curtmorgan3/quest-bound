@@ -20,8 +20,11 @@ import {
   componentByIdMap,
   worldTopLeftWithEffective,
 } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
-import { isCanvasRootComponent } from '@/lib/compass-planes/sheet-editor/group-flex-utils';
-import { useComponentPositionMap } from '@/lib/compass-planes/utils';
+import {
+  getGroupOverflowMode,
+  isCanvasRootComponent,
+} from '@/lib/compass-planes/sheet-editor/group-flex-utils';
+import { getComponentStyles, useComponentPositionMap } from '@/lib/compass-planes/utils';
 import { useLayoutTransitionCSS } from '@/lib/compass-planes/utils/use-component-transition-css';
 import { parseComponentActiveStatesMap } from '@/lib/compass-planes/utils/component-states';
 import { mergeCharacterWindowComponents } from '@/lib/compass-planes/utils/merge-character-window-components';
@@ -65,6 +68,16 @@ export interface WindowNodeData {
   onDisplayScaleChange?: (id: string, scale: number) => void;
   /** Ruleset page template id — child-window open uses it for displayScale and layout lookups. */
   sheetTemplatePageId?: string | null;
+}
+
+/** True if any ancestor group clips this component's overflow (hidden or scroll). */
+function hasClippingAncestor(c: Component, byId: Map<string, Component>): boolean {
+  let cur = c.parentComponentId ? byId.get(c.parentComponentId) : undefined;
+  while (cur) {
+    if (getGroupOverflowMode(getComponentStyles(cur)) !== 'visible') return true;
+    cur = cur.parentComponentId ? byId.get(cur.parentComponentId) : undefined;
+  }
+  return false;
 }
 
 function CanvasRootComponentWrapper({
@@ -195,6 +208,9 @@ export const WindowNode = ({ data }: { data: WindowNodeData }) => {
     let maxR = -Infinity;
     let maxB = -Infinity;
     for (const c of components) {
+      // Components inside a clipping ancestor (overflow:hidden/scroll) don't
+      // affect the window's visual bounding box — their parent already does.
+      if (hasClippingAncestor(c, byId)) continue;
       const eff = effectiveLayout.get(c.id);
       if (!eff) continue;
       const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);

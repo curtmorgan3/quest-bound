@@ -3,11 +3,22 @@ import {
   componentByIdMap,
   worldTopLeftWithEffective,
 } from '@/lib/compass-planes/sheet-editor/component-world-geometry';
+import { getGroupOverflowMode } from '@/lib/compass-planes/sheet-editor/group-flex-utils';
 import { db } from '@/stores';
 import type { Component } from '@/types';
+import { getComponentStyles } from './node-conversion';
 
 const DEFAULT_W = 400;
 const DEFAULT_H = 300;
+
+function hasClippingAncestor(c: Component, byId: Map<string, Component>): boolean {
+  let cur = c.parentComponentId ? byId.get(c.parentComponentId) : undefined;
+  while (cur) {
+    if (getGroupOverflowMode(getComponentStyles(cur)) !== 'visible') return true;
+    cur = cur.parentComponentId ? byId.get(cur.parentComponentId) : undefined;
+  }
+  return false;
+}
 const MIN_DS = 0.25;
 
 /** Unscaled content width/height from component layout (matches `WindowNode` bounds). */
@@ -25,6 +36,7 @@ export function computeWindowContentUnscaledSize(components: Component[]): {
   let maxR = -Infinity;
   let maxB = -Infinity;
   for (const c of components) {
+    if (hasClippingAncestor(c, byId)) continue;
     const eff = effectiveLayout.get(c.id);
     if (!eff) continue;
     const tl = worldTopLeftWithEffective(c, byId, effectiveLayout);
