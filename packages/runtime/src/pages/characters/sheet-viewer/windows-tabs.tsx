@@ -133,8 +133,9 @@ export const WindowsTabs = ({
 
     const currentPage = characterPages.find((p) => p.id === currentPageId);
     let layer: number | undefined;
+    let templateRw: RulesetWindow | undefined;
     if (currentPage?.pageId) {
-      const templateRw = (await db.rulesetWindows
+      templateRw = (await db.rulesetWindows
         .where('pageId')
         .equals(currentPage.pageId)
         .filter((rw) => (rw as RulesetWindow).windowId === rulesetWindow.id)
@@ -166,6 +167,7 @@ export const WindowsTabs = ({
       y: 100,
       isCollapsed: false,
       layer,
+      sticky: templateRw?.sticky,
     });
 
     setIsAddWindowModalOpen(false);
