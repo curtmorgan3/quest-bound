@@ -146,6 +146,13 @@ export type InventoryComponentData = {
   showItemAs?: 'image' | 'title';
   /** When `showItemAs` is `image`, show entity label in a tooltip on hover. */
   showLabelTooltip?: boolean;
+  /**
+   * Controls how items are sized relative to the cell:
+   * - `'restrict-to-fit'` (default): item occupies its natural inventory dimensions; drop rejected only if it won't fit.
+   * - `'restrict-to-exact'`: drop rejected unless the item's pixel size exactly matches one cell.
+   * - `'scale-to-cell'`: item is rendered scaled to exactly one cell regardless of its inventory dimensions.
+   */
+  itemSizeBehavior?: 'restrict-to-fit' | 'restrict-to-exact' | 'scale-to-cell';
 };
 
 export type GraphVariant = 'horizontal-linear' | 'vertical-linear' | 'circular';

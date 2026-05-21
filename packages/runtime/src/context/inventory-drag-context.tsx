@@ -24,6 +24,7 @@ export type InventoryDropTargetConfig = {
   gridRows: number;
   typeRestriction?: 'item' | 'action' | 'attribute';
   categoryRestriction?: string;
+  itemSizeBehavior?: 'restrict-to-fit' | 'restrict-to-exact' | 'scale-to-cell';
 };
 
 type RegisteredTarget = {

@@ -4,6 +4,7 @@ import { useComponentCanvasDimensions } from '@/lib/compass-planes/canvas/editor
 import { editorNodeComponentVisualEqual } from '@/lib/compass-planes/nodes/editor-node-memo';
 import {
   getBackgroundStyle,
+  getBorderStyle,
   getColorStyle,
   getComponentData,
   useComponentStyles,
@@ -55,6 +56,7 @@ export const EditInventoryNode = () => {
           width: cw,
           ...containerStyle,
           borderRadius: css.borderRadius,
+          ...getBorderStyle(css),
           overflow: 'hidden',
         }}></div>
     </ResizableNode>
@@ -92,6 +94,7 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
   const showLabelTooltip = showItemAs === 'image' && data.showLabelTooltip === true;
   const typeRestriction = data.typeRestriction;
   const categoryRestriction = data.categoryRestriction;
+  const itemSizeBehavior = data.itemSizeBehavior ?? 'restrict-to-fit';
 
   const inventoryItems = (characterContext?.inventoryItems ?? []).filter(
     (item) => item.componentId === component.id,
@@ -111,6 +114,7 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
       gridRows,
       typeRestriction,
       categoryRestriction,
+      itemSizeBehavior,
     });
 
     return () => {
@@ -129,6 +133,7 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
     inventoryDisabled,
     typeRestriction,
     categoryRestriction,
+    itemSizeBehavior,
   ]);
 
   useEffect(() => {
@@ -206,6 +211,7 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
                 backgroundSize: `${cellWidth}px ${cellHeight}px`,
               }),
           borderRadius: css.borderRadius,
+          ...getBorderStyle(css),
           overflow: 'hidden',
           touchAction: 'none',
         }}>
@@ -213,6 +219,10 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
           const pos = getItemPosition(invItem);
           const isDragging = dragState?.itemId === invItem.id && activeDrag?.item.id === invItem.id;
           const entityLabel = invItem.label?.trim() ? invItem.label.trim() : invItem.title;
+
+          const scaledToCell = itemSizeBehavior === 'scale-to-cell';
+          const itemDisplayWidth = scaledToCell ? cellWidth : 20 * invItem.inventoryWidth;
+          const itemDisplayHeight = scaledToCell ? cellHeight : 20 * invItem.inventoryHeight;
 
           const cellDiv = (
             <div
@@ -227,8 +237,8 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
                 position: 'absolute',
                 left: pos.left,
                 top: pos.top,
-                width: 20 * invItem.inventoryWidth,
-                height: 20 * invItem.inventoryHeight,
+                width: itemDisplayWidth,
+                height: itemDisplayHeight,
                 cursor: inventoryDisabled ? 'default' : isDragging ? 'grabbing' : 'grab',
                 // Hide the in-grid item while dragging so only the
                 // global drag preview is visible.

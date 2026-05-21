@@ -43,6 +43,7 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
   const categoryRestriction = firstComponentData?.categoryRestriction ?? '';
   const showItemAs = firstComponentData?.showItemAs ?? 'image';
   const showLabelTooltip = firstComponentData?.showLabelTooltip === true;
+  const itemSizeBehavior = firstComponentData?.itemSizeBehavior ?? 'restrict-to-fit';
 
   const existingCategories = useMemo(() => {
     if (!currentType) return [];
@@ -133,6 +134,22 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
     fireExternalComponentChangeEvent({ updates });
   };
 
+  const handleItemSizeBehaviorChange = async (value: string) => {
+    if (editableComponents.length === 0) return;
+
+    const sizeBehavior = value as InventoryComponentData['itemSizeBehavior'];
+
+    const updates = editableComponents.map((component) => ({
+      id: component.id,
+      data: updateComponentData(component.data, {
+        itemSizeBehavior: sizeBehavior === 'restrict-to-fit' ? undefined : sizeBehavior,
+      }),
+    }));
+
+    await updateComponents(updates);
+    fireExternalComponentChangeEvent({ updates });
+  };
+
   const handleShowLabelTooltipChange = async (checked: boolean) => {
     if (editableComponents.length === 0) return;
 
@@ -211,6 +228,22 @@ export const InventoryDataEdit = ({ components, updateComponents }: InventoryDat
           <SelectContent>
             <SelectItem value='image'>Image</SelectItem>
             <SelectItem value='title'>Title</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className='flex flex-col gap-1'>
+        <label className='text-xs text-muted-foreground'>Item Size Behavior</label>
+        <Select
+          value={itemSizeBehavior}
+          onValueChange={handleItemSizeBehaviorChange}
+          disabled={isDisabled}>
+          <SelectTrigger className='w-full'>
+            <SelectValue placeholder='Select size behavior' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='restrict-to-fit'>Restrict to Fit</SelectItem>
+            <SelectItem value='restrict-to-exact'>Restrict to Exact</SelectItem>
+            <SelectItem value='scale-to-cell'>Scale to Cell</SelectItem>
           </SelectContent>
         </Select>
       </div>

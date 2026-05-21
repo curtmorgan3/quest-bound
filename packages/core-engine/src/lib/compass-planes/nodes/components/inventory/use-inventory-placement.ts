@@ -29,6 +29,15 @@ export const useInventoryPlacement = () => {
         return;
       }
 
+      // Enforce item size restrictions.
+      if (config.itemSizeBehavior === 'restrict-to-exact') {
+        const itemPxW = item.inventoryWidth * 20;
+        const itemPxH = item.inventoryHeight * 20;
+        if (itemPxW !== config.cellWidth || itemPxH !== config.cellHeight) {
+          return;
+        }
+      }
+
       const targetItems = inventoryItems.filter((entry) => entry.componentId === targetComponentId);
 
       const itemWidthInPixels = item.inventoryWidth * 20;
