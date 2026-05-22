@@ -67,6 +67,7 @@ function clearInheritedClickRowIdsInMergedData(data: ComponentData) {
   data.clickActionId = null;
   data.clickChildWindowId = null;
   data.clickScriptId = null;
+  data.closeCharacterWindowOnClick = false;
 }
 
 type ClickEventType =
