@@ -44,6 +44,49 @@ export function registerCharacterDbHooks(db: DB) {
     }, 0);
   });
 
+  // Fire script client onInventoryChange when an inventory item is added or modified
+  const fireInventoryChange = (inventoryId: string | undefined) => {
+    if (!inventoryId) return;
+    setTimeout(async () => {
+      try {
+        const inventory = await db.inventories.get(inventoryId);
+        const characterId = (inventory as { characterId?: string })?.characterId;
+        if (!characterId) return;
+        const character = await db.characters.get(characterId);
+        if (!character?.rulesetId) return;
+        const client = getQBScriptClient();
+        client
+          .onInventoryChange({
+            characterId,
+            rulesetId: character.rulesetId,
+            campaignId: getCurrentCampaignIdForScripts(),
+            campaignSceneId: getCurrentCampaignSceneIdForScripts(),
+            roll: getCurrentRollHandlerForScripts(),
+            rollSplit: getCurrentRollSplitHandlerForScripts(),
+          })
+          .catch((err) => {
+            console.warn('Reactive inventory script execution failed:', err);
+          });
+      } catch (error) {
+        console.warn('Reactive inventory script execution failed:', error);
+      }
+    }, 0);
+  };
+
+  db.inventoryItems.hook('creating', (_primKey, obj) => {
+    if (getSyncState().isSyncing) return;
+    const inventoryId = (obj as { inventoryId?: string })?.inventoryId;
+    fireInventoryChange(inventoryId);
+  });
+
+  db.inventoryItems.hook('updating', (modifications, _primKey, obj) => {
+    if (getSyncState().isSyncing) return;
+    const mods = modifications as { quantity?: unknown; deleted?: unknown };
+    if (mods.quantity === undefined && mods.deleted === undefined) return;
+    const inventoryId = (obj as { inventoryId?: string })?.inventoryId;
+    fireInventoryChange(inventoryId);
+  });
+
   // Create an inventory when a character is created
   db.characters.hook('creating', (_primKey, obj) => {
     if (getSyncState().isSyncing) return;

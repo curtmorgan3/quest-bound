@@ -502,6 +502,94 @@ export class ReactiveExecutor {
   }
 
   /**
+   * Execute all scripts that use `subscribe('Inventory')` for the given character.
+   * Call this after any operation that modifies the character's inventory.
+   */
+  async onInventoryChange(
+    characterId: string,
+    rulesetId: string,
+    options: ReactiveExecutionOptions = {},
+  ): Promise<ReactiveExecutionResult> {
+    if (!this.graph) {
+      await this.loadGraph(rulesetId);
+    }
+
+    if (!this.graph) {
+      return {
+        success: true,
+        scriptsExecuted: [],
+        executionCount: 0,
+        rollbackPerformed: false,
+        modifiedAttributeIds: [],
+        componentAnimations: [],
+        componentTransitions: [],
+      };
+    }
+
+    const scriptIds = Array.from(this.graph.getInventorySubscriberScripts());
+    if (scriptIds.length === 0) {
+      return {
+        success: true,
+        scriptsExecuted: [],
+        executionCount: 0,
+        rollbackPerformed: false,
+        modifiedAttributeIds: [],
+        componentAnimations: [],
+        componentTransitions: [],
+      };
+    }
+
+    const executionId = this.executionTracker.startExecution(characterId, 'inventory_change');
+    const context = this.executionTracker.getContext(executionId);
+    if (context && options.maxExecutions !== undefined) context.maxExecutions = options.maxExecutions;
+    if (context && options.maxPerScript !== undefined) context.maxPerScript = options.maxPerScript;
+    if (context && options.timeLimit !== undefined) context.timeLimit = options.timeLimit;
+
+    if (options.useTransaction !== false) {
+      await this.transactionManager.createFullSnapshot(executionId, characterId);
+    }
+
+    try {
+      const { modifiedAttributeIds, componentAnimations, componentTransitions } =
+        await this.executeScriptChain(scriptIds, characterId, rulesetId, executionId, options);
+
+      this.transactionManager.commit(executionId);
+      this.executionTracker.endExecution(executionId);
+
+      return {
+        success: true,
+        scriptsExecuted: scriptIds,
+        executionCount: scriptIds.length,
+        rollbackPerformed: false,
+        modifiedAttributeIds,
+        componentAnimations,
+        componentTransitions,
+      };
+    } catch (error) {
+      let rollbackPerformed = false;
+      if (this.transactionManager.hasSnapshot(executionId)) {
+        await this.transactionManager.rollback(executionId);
+        rollbackPerformed = true;
+      }
+      await this.logError(error as Error, characterId, rulesetId, executionId);
+      if (error instanceof ExecutionLimitError) {
+        await this.handleInfiniteLoop(error as ExecutionLimitError, characterId);
+      }
+      this.executionTracker.endExecution(executionId);
+      return {
+        success: false,
+        scriptsExecuted: context?.executionChain ?? [],
+        executionCount: context?.executionChain?.length ?? 0,
+        error: error as Error,
+        rollbackPerformed,
+        modifiedAttributeIds: [],
+        componentAnimations: [],
+        componentTransitions: [],
+      };
+    }
+  }
+
+  /**
    * Clear the loaded graph (forces reload on next execution).
    */
   clearGraph(): void {

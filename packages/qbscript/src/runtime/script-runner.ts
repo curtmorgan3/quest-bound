@@ -277,6 +277,8 @@ export interface ScriptExecutionResult {
     durationMs: number;
     cubicBezier: string;
   }>;
+  /** True when the script added, removed, or updated inventory items. Used to trigger `subscribe('Inventory')` reactive scripts. */
+  inventoryModified?: boolean;
   /** NPCs spawned via Scene.spawnCharacter during this run (for campaign play roster realtime). */
   rosterBroadcasts?: Array<{
     campaignId: string;
@@ -620,6 +622,23 @@ export class ScriptRunner {
         }
       | undefined;
     return raw ?? { animations: [], styleOverrides: {} };
+  }
+
+  /**
+   * Returns true when the script queued any inventory add/update/delete.
+   * Must be called before flushCache() since flush clears pendingUpdates.
+   */
+  getInventoryModified(): boolean {
+    for (const key of this.pendingUpdates.keys()) {
+      if (
+        key === 'inventoryAdd' ||
+        key.startsWith('inventoryUpdate:') ||
+        key.startsWith('inventoryDelete:')
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -1585,8 +1604,9 @@ export class ScriptRunner {
       const ast = new Parser(tokens).parse();
       const value = await this.evaluator.eval(ast);
 
-      // Collect modified attribute IDs and component updates before flush (flush clears pendingUpdates)
+      // Collect modified attribute IDs, inventory flag, and component updates before flush (flush clears pendingUpdates)
       const modifiedAttributeIds = this.getModifiedAttributeIds();
+      const inventoryModified = this.getInventoryModified();
       const componentUpdates = this.getComponentUpdates();
       const componentTransitions = this.sheetUiCoordinator?.drainPendingTransitions() ?? [];
 
@@ -1605,6 +1625,7 @@ export class ScriptRunner {
         logMessages: this.evaluator.getLogMessages(),
         gameLogTimeline: this.evaluator.getScriptGameLog(),
         modifiedAttributeIds: allModifiedAttributeIds,
+        ...(inventoryModified ? { inventoryModified: true } : {}),
         navigateTargets,
         componentAnimations: componentUpdates.animations ?? [],
         ...(componentTransitions.length > 0 ? { componentTransitions } : {}),

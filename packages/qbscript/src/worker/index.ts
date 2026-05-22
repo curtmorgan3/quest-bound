@@ -9,6 +9,7 @@ export { QBScriptClient, getQBScriptClient, terminateQBScriptClient } from './cl
 export type {
   ScriptExecutionOptions,
   AttributeChangeOptions,
+  InventoryChangeOptions,
   ValidationResult,
   WorkerSignalHandler,
 } from './client';

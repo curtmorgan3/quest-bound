@@ -95,6 +95,7 @@ import type {
   AttributeChangedPayload,
   AttributesModifiedByScriptPayload,
   ExecuteScriptPayload,
+  InventoryChangedPayload,
   MainToWorkerSignal,
   WorkerToMainSignal,
 } from './signals';
@@ -528,6 +529,10 @@ async function handleSignal(signal: MainToWorkerSignal): Promise<void> {
 
       case 'ATTRIBUTE_CHANGED':
         await handleAttributeChanged(signal.payload);
+        break;
+
+      case 'INVENTORY_CHANGED':
+        await handleInventoryChanged(signal.payload);
         break;
 
       case 'RUN_INITIAL_ATTRIBUTE_SYNC':
@@ -1064,37 +1069,21 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
       // attribute, downstream dependencies refire (e.g. a's script sets b -> c's script runs).
       const directModifiedIds = result.modifiedAttributeIds ?? [];
       let allModifiedIds = new Set<string>(directModifiedIds);
-      if (directModifiedIds.length > 0) {
-        const reactiveOptions = {
-          executeActionEvent: (
-            actionId: string,
-            characterId: string,
-            targetId: string | null,
-            eventType: 'on_activate' | 'on_deactivate',
-          ) =>
-            executor.executeActionEvent(
-              actionId,
-              characterId,
-              targetId,
-              eventType,
-              rollFn,
-              payload.campaignId,
-              undefined,
-              rollSplitFn,
-              promptFn,
-              selectCharacterFn,
-              selectCharactersFn,
-              payload.campaignSceneId,
-              promptMultipleFn,
-              promptInputFn,
-              createRollForCharacter,
-              createRollSplitForCharacter,
-              payload.sheetPreviewRulesetWindowId,
-            ),
-          executeItemEvent: createWorkerExecuteItemEventFn(
-            executor,
+      const reactiveOptions = {
+        executeActionEvent: (
+          actionId: string,
+          characterId: string,
+          targetId: string | null,
+          eventType: 'on_activate' | 'on_deactivate',
+        ) =>
+          executor.executeActionEvent(
+            actionId,
+            characterId,
+            targetId,
+            eventType,
             rollFn,
             payload.campaignId,
+            undefined,
             rollSplitFn,
             promptFn,
             selectCharacterFn,
@@ -1106,17 +1095,33 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
             createRollSplitForCharacter,
             payload.sheetPreviewRulesetWindowId,
           ),
-          roll: rollFn,
-          rollSplit: rollSplitFn,
-          prompt: promptFn,
-          promptMultiple: promptMultipleFn,
-          promptInput: promptInputFn,
-          selectCharacter: selectCharacterFn,
-          selectCharacters: selectCharactersFn,
-          campaignId: payload.campaignId,
-          campaignSceneId: payload.campaignSceneId,
-          sheetPreviewRulesetWindowId: payload.sheetPreviewRulesetWindowId,
-        };
+        executeItemEvent: createWorkerExecuteItemEventFn(
+          executor,
+          rollFn,
+          payload.campaignId,
+          rollSplitFn,
+          promptFn,
+          selectCharacterFn,
+          selectCharactersFn,
+          payload.campaignSceneId,
+          promptMultipleFn,
+          promptInputFn,
+          createRollForCharacter,
+          createRollSplitForCharacter,
+          payload.sheetPreviewRulesetWindowId,
+        ),
+        roll: rollFn,
+        rollSplit: rollSplitFn,
+        prompt: promptFn,
+        promptMultiple: promptMultipleFn,
+        promptInput: promptInputFn,
+        selectCharacter: selectCharacterFn,
+        selectCharacters: selectCharactersFn,
+        campaignId: payload.campaignId,
+        campaignSceneId: payload.campaignSceneId,
+        sheetPreviewRulesetWindowId: payload.sheetPreviewRulesetWindowId,
+      };
+      if (directModifiedIds.length > 0) {
         const chainResult = await runReactiveChainForModifiedAttributes(
           directModifiedIds,
           payload.characterId,
@@ -1128,6 +1133,25 @@ async function handleExecuteScript(payload: ExecuteScriptPayload): Promise<void>
           reactiveComponentAnimations.push(entry);
         }
         for (const entry of chainResult.componentTransitions) {
+          reactiveComponentTransitions.push(entry);
+        }
+      }
+      if (result.inventoryModified && payload.characterId) {
+        if (!reactiveExecutor) {
+          reactiveExecutor = new ReactiveExecutor(db);
+        }
+        const invResult = await reactiveExecutor.onInventoryChange(
+          payload.characterId,
+          payload.rulesetId,
+          reactiveOptions,
+        );
+        for (const id of invResult.modifiedAttributeIds ?? []) {
+          allModifiedIds.add(id);
+        }
+        for (const entry of invResult.componentAnimations ?? []) {
+          reactiveComponentAnimations.push(entry);
+        }
+        for (const entry of invResult.componentTransitions ?? []) {
           reactiveComponentTransitions.push(entry);
         }
       }
@@ -1414,6 +1438,186 @@ async function handleAttributeChanged(payload: AttributeChangedPayload): Promise
         },
       });
     }
+  } catch (error) {
+    sendSignal({
+      type: 'SCRIPT_ERROR',
+      payload: {
+        requestId: payload.requestId,
+        rulesetId: payload.rulesetId,
+        error: {
+          message: error instanceof Error ? error.message : String(error),
+          stackTrace: error instanceof Error ? error.stack : undefined,
+        },
+      },
+    });
+  }
+}
+
+async function handleInventoryChanged(payload: InventoryChangedPayload): Promise<void> {
+  if (shouldBlockClientCampaignScript(campaignPlayScriptPolicy, payload.campaignId)) {
+    sendBlockedReactiveStyleResult(payload.requestId, payload.characterId);
+    return;
+  }
+
+  try {
+    const {
+      rollFn,
+      rollSplitFn,
+      createRollForCharacter,
+      createRollSplitForCharacter,
+      promptFn,
+      promptMultipleFn,
+      promptInputFn,
+      selectCharacterFn,
+      selectCharactersFn,
+    } = createWorkerMainThreadUiBridges({
+      executionRequestId: payload.requestId,
+      actingCharacterId: payload.characterId,
+      rulesetId: payload.rulesetId,
+      campaignId: payload.campaignId,
+    });
+    let executor: EventHandlerExecutor;
+    executor = new EventHandlerExecutor(
+      db,
+      createOnAttributesModified(
+        rollFn,
+        rollSplitFn,
+        () => executor,
+        undefined,
+        promptFn,
+        promptMultipleFn,
+        selectCharacterFn,
+        selectCharactersFn,
+        undefined,
+        undefined,
+        undefined,
+        promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
+      ),
+    );
+
+    if (!reactiveExecutor) {
+      reactiveExecutor = new ReactiveExecutor(db);
+    }
+
+    const reactiveOptions = {
+      executeActionEvent: (
+        actionId: string,
+        characterId: string,
+        targetId: string | null,
+        eventType: 'on_activate' | 'on_deactivate',
+      ) =>
+        executor.executeActionEvent(
+          actionId,
+          characterId,
+          targetId,
+          eventType,
+          rollFn,
+          payload.campaignId,
+          undefined,
+          rollSplitFn,
+          promptFn,
+          selectCharacterFn,
+          selectCharactersFn,
+          payload.campaignSceneId,
+          promptMultipleFn,
+          promptInputFn,
+          createRollForCharacter,
+          createRollSplitForCharacter,
+          payload.sheetPreviewRulesetWindowId,
+        ),
+      executeItemEvent: createWorkerExecuteItemEventFn(
+        executor,
+        rollFn,
+        payload.campaignId,
+        rollSplitFn,
+        promptFn,
+        selectCharacterFn,
+        selectCharactersFn,
+        payload.campaignSceneId,
+        promptMultipleFn,
+        promptInputFn,
+        createRollForCharacter,
+        createRollSplitForCharacter,
+        payload.sheetPreviewRulesetWindowId,
+      ),
+      roll: rollFn,
+      rollSplit: rollSplitFn,
+      prompt: promptFn,
+      promptMultiple: promptMultipleFn,
+      promptInput: promptInputFn,
+      selectCharacter: selectCharacterFn,
+      selectCharacters: selectCharactersFn,
+      campaignId: payload.campaignId,
+      campaignSceneId: payload.campaignSceneId,
+      sheetPreviewRulesetWindowId: payload.sheetPreviewRulesetWindowId,
+    };
+
+    const invResult = await reactiveExecutor.onInventoryChange(
+      payload.characterId,
+      payload.rulesetId,
+      reactiveOptions,
+    );
+
+    if (!invResult.success && invResult.error) {
+      sendSignal({
+        type: 'SCRIPT_ERROR',
+        payload: {
+          requestId: payload.requestId,
+          rulesetId: payload.rulesetId,
+          error: {
+            message: invResult.error.message,
+            stackTrace: invResult.error.stack,
+          },
+        },
+      });
+      return;
+    }
+
+    // If inventory-subscribed scripts modified attributes, run reactive chains for those too
+    const directModifiedIds = invResult.modifiedAttributeIds ?? [];
+    const allModifiedIds = new Set<string>(directModifiedIds);
+    if (directModifiedIds.length > 0) {
+      const chainResult = await runReactiveChainForModifiedAttributes(
+        directModifiedIds,
+        payload.characterId,
+        payload.rulesetId,
+        reactiveOptions,
+      );
+      chainResult.allModifiedIds.forEach((id) => allModifiedIds.add(id));
+    }
+
+    const modifiedAttributeIds = Array.from(allModifiedIds);
+    if (modifiedAttributeIds.length > 0) {
+      sendSignal({
+        type: 'ATTRIBUTES_MODIFIED_BY_SCRIPT',
+        payload: {
+          characterId: payload.characterId,
+          attributeIds: modifiedAttributeIds,
+        } satisfies AttributesModifiedByScriptPayload,
+      });
+    }
+
+    sendSignal({
+      type: 'SCRIPT_RESULT',
+      payload: {
+        requestId: payload.requestId,
+        result: {
+          scriptsExecuted: invResult.scriptsExecuted,
+          executionCount: invResult.executionCount,
+        },
+        announceMessages: [],
+        logMessages: [],
+        executionTime: 0,
+        characterId: payload.characterId,
+        componentAnimations: invResult.componentAnimations ?? [],
+        ...(invResult.componentTransitions?.length
+          ? { componentTransitions: invResult.componentTransitions }
+          : {}),
+      },
+    });
   } catch (error) {
     sendSignal({
       type: 'SCRIPT_ERROR',

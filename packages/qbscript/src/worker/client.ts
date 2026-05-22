@@ -31,6 +31,7 @@ import type { RollFn, RollSplitFn } from '@quest-bound/types';
 import type {
   AttributeChangedPayload,
   ExecuteScriptPayload,
+  InventoryChangedPayload,
   MainToWorkerSignal,
   ScriptErrorPayload,
   ScriptResultPayload,
@@ -85,6 +86,16 @@ export interface AttributeChangeOptions {
   /** When set, roll() in attribute scripts uses this handler (same as executeActionEvent). */
   roll?: RollFn;
   /** When set, rollSplit() in attribute scripts uses this handler. */
+  rollSplit?: RollSplitFn;
+}
+
+export interface InventoryChangeOptions {
+  characterId: string;
+  rulesetId: string;
+  campaignId?: string;
+  campaignSceneId?: string;
+  timeout?: number;
+  roll?: RollFn;
   rollSplit?: RollSplitFn;
 }
 
@@ -891,6 +902,40 @@ export class QBScriptClient {
     try {
       const result = await this.sendSignal<{ value: any }>(
         { type: 'ATTRIBUTE_CHANGED', payload },
+        requestId,
+        options.timeout,
+      );
+      return result.value;
+    } finally {
+      this.pendingRollHandlers.delete(requestId);
+      this.pendingRollSplitHandlers.delete(requestId);
+    }
+  }
+
+  /**
+   * Notify worker that a character's inventory changed (triggers scripts that use subscribe('Inventory')).
+   */
+  async onInventoryChange(options: InventoryChangeOptions): Promise<{
+    scriptsExecuted: string[];
+    executionCount: number;
+  }> {
+    const requestId = generateRequestId();
+    this.pendingRollHandlers.set(requestId, options.roll ?? defaultScriptDiceRoller);
+    this.pendingRollSplitHandlers.set(requestId, options.rollSplit ?? defaultScriptDiceRollerSplit);
+
+    const sheetPreviewRulesetWindowId = getSheetPreviewRulesetWindowIdForScripts();
+    const payload: InventoryChangedPayload = {
+      characterId: options.characterId,
+      rulesetId: options.rulesetId,
+      requestId,
+      campaignId: options.campaignId ?? getCurrentCampaignIdForScripts(),
+      campaignSceneId: options.campaignSceneId ?? getCurrentCampaignSceneIdForScripts(),
+      ...(sheetPreviewRulesetWindowId ? { sheetPreviewRulesetWindowId } : {}),
+    };
+
+    try {
+      const result = await this.sendSignal<{ value: any }>(
+        { type: 'INVENTORY_CHANGED', payload },
         requestId,
         options.timeout,
       );

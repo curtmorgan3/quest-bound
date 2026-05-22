@@ -13,6 +13,9 @@ export interface GraphNode {
   dependents: Set<string>; // Script IDs that depend on this script's entity
 }
 
+/** Sentinel stored in `dependencies` for scripts that use `subscribe('Inventory')`. */
+export const INVENTORY_SUBSCRIPTION_SENTINEL = '__inventory__';
+
 /**
  * DependencyGraph manages the relationships between scripts and attributes.
  * It tracks which scripts depend on which attributes and provides methods
@@ -21,12 +24,14 @@ export interface GraphNode {
 export class DependencyGraph {
   private nodes: Map<string, GraphNode>; // scriptId -> GraphNode
   private attributeToScripts: Map<string, Set<string>>; // attributeId -> Set of scriptIds
+  private inventorySubscriberScripts: Set<string>; // scriptIds that subscribe to inventory changes
   private rulesetId: string;
   private db: DB;
 
   constructor(rulesetId: string, db: DB) {
     this.nodes = new Map();
     this.attributeToScripts = new Map();
+    this.inventorySubscriberScripts = new Set();
     this.rulesetId = rulesetId;
     this.db = db;
   }
@@ -39,6 +44,7 @@ export class DependencyGraph {
     // Clear existing data
     this.nodes.clear();
     this.attributeToScripts.clear();
+    this.inventorySubscriberScripts.clear();
 
     // Load all scripts for this ruleset
     const scripts = await this.db.scripts.where({ rulesetId: this.rulesetId }).toArray();
@@ -57,17 +63,22 @@ export class DependencyGraph {
       const analysis = analyzeScript(script.sourceCode);
       const dependencies = new Set<string>();
 
-      // Convert attribute names to IDs
+      // Convert attribute names to IDs; handle special 'Inventory' subscription
       for (const attrName of analysis.subscriptions) {
-        const attrId = attributeNameToId.get(attrName);
-        if (attrId) {
-          dependencies.add(attrId);
+        if (attrName === 'Inventory') {
+          dependencies.add(INVENTORY_SUBSCRIPTION_SENTINEL);
+          this.inventorySubscriberScripts.add(script.id);
+        } else {
+          const attrId = attributeNameToId.get(attrName);
+          if (attrId) {
+            dependencies.add(attrId);
 
-          // Add to reverse index
-          if (!this.attributeToScripts.has(attrId)) {
-            this.attributeToScripts.set(attrId, new Set());
+            // Add to reverse index
+            if (!this.attributeToScripts.has(attrId)) {
+              this.attributeToScripts.set(attrId, new Set());
+            }
+            this.attributeToScripts.get(attrId)!.add(script.id);
           }
-          this.attributeToScripts.get(attrId)!.add(script.id);
         }
       }
 
@@ -236,6 +247,7 @@ export class DependencyGraph {
   async loadFromDatabase(): Promise<void> {
     this.nodes.clear();
     this.attributeToScripts.clear();
+    this.inventorySubscriberScripts.clear();
 
     const dbNodes = await this.db.dependencyGraphNodes
       .where({ rulesetId: this.rulesetId })
@@ -252,12 +264,16 @@ export class DependencyGraph {
 
       this.nodes.set(dbNode.scriptId, node);
 
-      // Rebuild attributeToScripts index
+      // Rebuild attributeToScripts and inventorySubscriberScripts indexes
       for (const attrId of node.dependencies) {
-        if (!this.attributeToScripts.has(attrId)) {
-          this.attributeToScripts.set(attrId, new Set());
+        if (attrId === INVENTORY_SUBSCRIPTION_SENTINEL) {
+          this.inventorySubscriberScripts.add(dbNode.scriptId);
+        } else {
+          if (!this.attributeToScripts.has(attrId)) {
+            this.attributeToScripts.set(attrId, new Set());
+          }
+          this.attributeToScripts.get(attrId)!.add(dbNode.scriptId);
         }
-        this.attributeToScripts.get(attrId)!.add(dbNode.scriptId);
       }
     }
   }
@@ -269,6 +285,14 @@ export class DependencyGraph {
    */
   getSubscribers(attributeId: string): Set<string> {
     return this.attributeToScripts.get(attributeId) || new Set();
+  }
+
+  /**
+   * Get all script IDs that use `subscribe('Inventory')`.
+   * These scripts re-execute whenever the character's inventory changes.
+   */
+  getInventorySubscriberScripts(): Set<string> {
+    return new Set(this.inventorySubscriberScripts);
   }
 
   /**

@@ -16,6 +16,7 @@ export type MainToWorkerSignal =
   | BuildDependencyGraphSignal
   | ValidateScriptSignal
   | AttributeChangedSignal
+  | InventoryChangedSignal
   | InitialAttributeSyncSignal
   | ExecuteActionSignal
   | ExecuteActionEventSignal
@@ -63,6 +64,11 @@ export interface ValidateScriptSignal {
 export interface AttributeChangedSignal {
   type: 'ATTRIBUTE_CHANGED';
   payload: AttributeChangedPayload;
+}
+
+export interface InventoryChangedSignal {
+  type: 'INVENTORY_CHANGED';
+  payload: InventoryChangedPayload;
 }
 
 export interface InitialAttributeSyncSignal {
@@ -413,6 +419,15 @@ export interface AttributeChangedPayload {
     maxPerScript?: number;
     timeLimit?: number;
   };
+  sheetPreviewRulesetWindowId?: string;
+}
+
+export interface InventoryChangedPayload {
+  characterId: string;
+  rulesetId: string;
+  requestId: string;
+  campaignId?: string;
+  campaignSceneId?: string;
   sheetPreviewRulesetWindowId?: string;
 }
 
