@@ -173,11 +173,15 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
       sheetFitBottomInsetPx > 0 && Number.isFinite(sheetFitBottomInsetPx)
         ? sheetFitBottomInsetPx
         : 0;
+    // Divide by the fit scale so the bounds are in canvas coordinates, not screen pixels.
+    // Position calculations use these bounds to produce canvas-space (x, y) values that
+    // openCharacterSheetWindow stores directly as windowData.x / windowData.y.
+    const scale = sheetFitToViewport && sheetFitLayout ? sheetFitLayout.scale : 1;
     return {
-      width: rawCanvasBounds.width,
-      height: Math.max(0, rawCanvasBounds.height - inset),
+      width: rawCanvasBounds.width / scale,
+      height: Math.max(0, rawCanvasBounds.height - inset) / scale,
     };
-  }, [rawCanvasBounds, sheetFitBottomInsetPx]);
+  }, [rawCanvasBounds, sheetFitBottomInsetPx, sheetFitToViewport, sheetFitLayout]);
 
   useLayoutEffect(() => {
     const el = canvasRootRef.current;
@@ -607,14 +611,12 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
         height: `${100 / resolvedViewScale}%`,
       };
     }
-    if (sheetFitToViewport && sheetFitLayout) {
-      return {
-        transform: `translate(${sheetFitLayout.tx}px, ${sheetFitLayout.ty}px) scale(${sheetFitLayout.scale})`,
-        transformOrigin: '0 0',
-      };
-    }
+    // The fit transform is applied per-window instead of here so that the canvas root does
+    // not create a CSS stacking context. Without a stacking context on the canvas root,
+    // non-sticky and sticky window z-indices are directly comparable at the section level,
+    // allowing a newly opened window to correctly appear above sticky windows.
     return undefined;
-  }, [showGridToolbar, resolvedViewScale, sheetFitToViewport, sheetFitLayout]);
+  }, [showGridToolbar, resolvedViewScale]);
 
   return (
     <WindowCanvasSelectionContext.Provider value={selectionContextValue}>
@@ -702,6 +704,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
           </div>
         ) : null}
 
+        <SheetCanvasBoundsProvider value={sheetPlacementCanvasBounds}>
         <div
           ref={viewportRef}
           className={cn(
@@ -730,7 +733,6 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
               ref={canvasRootRef}
               className='relative min-h-full min-w-full'
               style={mergedCanvasStyle}>
-              <SheetCanvasBoundsProvider value={sheetPlacementCanvasBounds}>
                 {showBg && backgroundColor != null && (
                   <div
                     aria-hidden
@@ -779,6 +781,19 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                     (typeof w.layer === 'number' && Number.isFinite(w.layer)
                       ? Math.floor(w.layer)
                       : sortedIndex);
+                  // Apply the fit transform per-window (not on the canvas root) so the canvas
+                  // root creates no CSS stacking context. This lets non-sticky window z-indices
+                  // be compared directly with sticky window z-indices at the section level.
+                  const fit = sheetFitToViewport && sheetFitLayout ? sheetFitLayout : null;
+                  const wrapperStyle = fit
+                    ? {
+                        left: fit.tx + layoutX * fit.scale,
+                        top: fit.ty + layoutY * fit.scale,
+                        zIndex: zPaint,
+                        transform: `scale(${fit.scale})`,
+                        transformOrigin: '0 0' as const,
+                      }
+                    : { left: layoutX, top: layoutY, zIndex: zPaint };
 
                   return (
                     <div
@@ -788,7 +803,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                         else windowWrapperElByIdRef.current.delete(w.id);
                       }}
                       className='pointer-events-auto absolute'
-                      style={{ left: layoutX, top: layoutY, zIndex: zPaint }}
+                      style={wrapperStyle}
                       onPointerDown={(e) => {
                         if (!locked) {
                           setSelectedWindowId(w.id);
@@ -808,7 +823,6 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
                     </div>
                   );
                 })}
-              </SheetCanvasBoundsProvider>
             </div>
           </div>
         </div>
@@ -868,6 +882,7 @@ export function WindowCanvasHost<T extends WindowCanvasItem>({
             })}
           </div>
         )}
+        </SheetCanvasBoundsProvider>
       </section>
     </WindowCanvasSelectionContext.Provider>
   );

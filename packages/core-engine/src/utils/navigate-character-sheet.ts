@@ -194,6 +194,24 @@ export async function openCharacterSheetWindow(
     }
   }
 
+  const pageWindows = (await db.characterWindows
+    .where('characterId')
+    .equals(characterId)
+    .filter((cw) => (cw as CharacterWindow).characterPageId === currentPageId)
+    .toArray()) as CharacterWindow[];
+  // Windows without an explicit layer fall back to sortedIndex as their z-index (see
+  // window-canvas-host). Use pageWindows.length as a safe upper bound so the new window
+  // always lands above sticky windows that rely on that fallback.
+  const maxPeerLayer = pageWindows.reduce(
+    (m, cw) =>
+      Math.max(
+        m,
+        typeof cw.layer === 'number' && Number.isFinite(cw.layer) ? cw.layer : pageWindows.length,
+      ),
+    -1,
+  );
+  const layer = Math.max(layerFromTemplate ?? -1, maxPeerLayer) + 1;
+
   await db.characterWindows.add({
     id: crypto.randomUUID(),
     characterId,
@@ -204,7 +222,7 @@ export async function openCharacterSheetWindow(
     y,
     isCollapsed,
     displayScale,
-    layer: layerFromTemplate,
+    layer,
     sticky: stickyFromTemplate,
     createdAt: now,
     updatedAt: now,
