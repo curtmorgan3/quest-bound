@@ -194,6 +194,7 @@ const ViewTextNodeComponent = ({
             borderStyle: 'none',
             borderColor: undefined,
             boxSizing: undefined,
+            boxShadow: 'none',
             ...noSelect,
           }}>
           {data?.interpolatedValue}
