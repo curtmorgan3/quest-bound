@@ -7,9 +7,17 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import type { Script } from '@/types';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import type { Script, ScriptEntityType } from '@/types';
+import {
+  ChevronsUpDown,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -18,6 +26,16 @@ import {
   Search,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+
+const ENTITY_TYPE_LABELS: Record<ScriptEntityType, string> = {
+  attribute: 'Attribute',
+  action: 'Action',
+  item: 'Item',
+  archetype: 'Archetype',
+  global: 'Global',
+  characterLoader: 'Character Loader',
+  gameManager: 'Game Manager',
+};
 
 export const UNCATEGORIZED = 'Uncategorized';
 
@@ -45,9 +63,12 @@ export function FileTree({
   onMoveScript,
 }: FileTreeProps) {
   const [query, setQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<ScriptEntityType | 'all'>('all');
   const [openCats, setOpenCats] = useState<Record<string, boolean>>({});
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropCat, setDropCat] = useState<string | null>(null);
+
+  const collapseAll = () => setOpenCats((prev) => Object.fromEntries(Object.keys(prev).map((k) => [k, false])));
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -76,7 +97,9 @@ export function FileTree({
 
   const lowerQuery = query.toLowerCase();
   const filtered = scripts.filter(
-    (s) => !query || (s.name ?? '').toLowerCase().includes(lowerQuery),
+    (s) =>
+      (!query || (s.name ?? '').toLowerCase().includes(lowerQuery)) &&
+      (typeFilter === 'all' || s.entityType === typeFilter),
   );
 
   const grouped = categories.map((cat) => ({
@@ -109,26 +132,52 @@ export function FileTree({
 
   return (
     <aside className='w-[280px] shrink-0 border-r bg-muted/20 flex flex-col min-h-0'>
-      <div className='flex items-center gap-2 p-2 border-b'>
-        <div className='relative flex-1 min-w-0'>
-          <Search className='absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none' />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder='Filter scripts…'
-            className='h-8 pl-7 text-sm'
-            aria-label='Filter scripts'
-          />
+      <div className='flex flex-col border-b'>
+        <div className='flex items-center gap-2 p-2'>
+          <div className='relative flex-1 min-w-0'>
+            <Search className='absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none' />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder='Filter scripts…'
+              className='h-8 pl-7 text-sm'
+              aria-label='Filter scripts'
+            />
+          </div>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8 shrink-0'
+            onClick={onToggleCollapsed}
+            title='Collapse file tree'
+            aria-label='Collapse file tree'>
+            <ChevronLeft className='h-4 w-4' />
+          </Button>
         </div>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-8 w-8 shrink-0'
-          onClick={onToggleCollapsed}
-          title='Collapse file tree'
-          aria-label='Collapse file tree'>
-          <ChevronLeft className='h-4 w-4' />
-        </Button>
+        <div className='flex items-center gap-2 px-2 pb-2'>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as ScriptEntityType | 'all')}>
+            <SelectTrigger className='h-7 flex-1 text-xs'>
+              <SelectValue placeholder='All types' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>All types</SelectItem>
+              {(Object.keys(ENTITY_TYPE_LABELS) as ScriptEntityType[]).map((type) => (
+                <SelectItem key={type} value={type}>
+                  {ENTITY_TYPE_LABELS[type]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant='ghost'
+            size='sm'
+            className='h-7 px-2 text-xs text-muted-foreground gap-1 shrink-0'
+            onClick={collapseAll}
+            title='Collapse all categories'>
+            <ChevronsUpDown className='h-3 w-3' />
+            Collapse All
+          </Button>
+        </div>
       </div>
 
       <div className='flex-1 overflow-auto p-1.5'>
