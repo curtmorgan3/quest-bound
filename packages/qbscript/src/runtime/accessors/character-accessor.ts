@@ -528,6 +528,15 @@ export class CharacterAccessor implements StructuredCloneSafe {
     return out;
   }
 
+  get inventoryWeight(): number {
+    return this.inventoryItems
+      .filter((inv) => inv.type === 'item')
+      .reduce((sum, inv) => {
+        const item = this.itemsCache.get(inv.entityId);
+        return sum + (item?.weight ?? 0) * inv.quantity;
+      }, 0);
+  }
+
   get name(): string {
     return this.characterName;
   }
