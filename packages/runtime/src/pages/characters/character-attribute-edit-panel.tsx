@@ -12,7 +12,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CharacterContext } from '@quest-bound/runtime/context';
 import { PopoverScrollContainerContext } from '@/stores/context/popover-scroll-container-context';
-import { useContext, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export function CharacterAttributeEditPanel() {
@@ -38,11 +38,44 @@ export function CharacterAttributeEditPanel() {
     }
   };
 
-  const handleChange = (value: string | number | boolean) => {
-    if (attribute) {
-      updateCharacterAttribute(attribute.id, { value });
-    }
-  };
+  const [localStringValue, setLocalStringValue] = useState(
+    typeof attribute?.value === 'string' ? attribute.value : '',
+  );
+  const [localNumberValue, setLocalNumberValue] = useState<number | ''>(
+    typeof attribute?.value === 'number' ? attribute.value : '',
+  );
+
+  useEffect(() => {
+    setLocalStringValue(typeof attribute?.value === 'string' ? attribute.value : '');
+    setLocalNumberValue(typeof attribute?.value === 'number' ? attribute.value : '');
+  }, [editAttributeId]);
+
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const persist = useCallback(
+    (value: string | number | boolean) => {
+      if (!attribute) return;
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      debounceTimer.current = setTimeout(() => {
+        updateCharacterAttribute(attribute.id, { value });
+      }, 300);
+    },
+    [attribute, updateCharacterAttribute],
+  );
+
+  const handleChange = useCallback(
+    (value: string | number | boolean) => {
+      if (!attribute) return;
+      if (typeof value === 'boolean' || attribute.type === 'list') {
+        updateCharacterAttribute(attribute.id, { value });
+        return;
+      }
+      if (typeof value === 'string') setLocalStringValue(value);
+      if (typeof value === 'number' || value === '') setLocalNumberValue(value as number | '');
+      persist(value);
+    },
+    [attribute, persist, updateCharacterAttribute],
+  );
 
   const [showingDescription, setShowingDescription] = useState(false);
   const sheetContentRef = useRef<HTMLDivElement>(null);
@@ -58,7 +91,7 @@ export function CharacterAttributeEditPanel() {
       case 'string':
         return (
           <MarkdownPanel
-            value={typeof attribute.value === 'string' ? attribute.value : ''}
+            value={localStringValue}
             onChange={handleChange}
             placeholder={`Enter ${attribute.title}...`}
             className='min-h-0 flex-1'
@@ -69,7 +102,7 @@ export function CharacterAttributeEditPanel() {
       case 'number':
         return (
           <NumberInput
-            value={typeof attribute.value === 'number' ? attribute.value : ''}
+            value={localNumberValue}
             wheelMin={attribute.min}
             wheelMax={attribute.max}
             inputMin={attribute.min}
