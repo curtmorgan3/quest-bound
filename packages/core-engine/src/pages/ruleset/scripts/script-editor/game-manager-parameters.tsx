@@ -90,69 +90,73 @@ export function GameManagerParameters({ parameters, onChange }: GameManagerParam
                 : 'unset';
 
             return (
-              <div key={param.id} className='flex gap-2 items-center'>
-                <Input
-                  className='flex-1'
-                  value={param.label}
-                  onChange={(e) => handleUpdate(param.id, { label: e.target.value })}
-                  placeholder='Label (used with params.get)'
-                />
-                <Select
-                  value={param.type}
-                  onValueChange={(v) =>
-                    handleUpdate(param.id, {
-                      type: v as ScriptParamType,
-                      defaultValue:
-                        v === 'boolean' ? undefined : (param.defaultValue as ScriptParamValue),
-                    })
-                  }>
-                  <SelectTrigger className='w-[110px]'>
-                    <SelectValue placeholder='Type' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='string'>Text</SelectItem>
-                    <SelectItem value='number'>Number</SelectItem>
-                    <SelectItem value='boolean'>Boolean</SelectItem>
-                  </SelectContent>
-                </Select>
-                {param.type === 'boolean' ? (
+              <div key={param.id} className='flex flex-col gap-1'>
+                <div className='flex gap-2 items-center'>
+                  <Input
+                    className='flex-1'
+                    value={param.label}
+                    onChange={(e) => handleUpdate(param.id, { label: e.target.value })}
+                    placeholder='Label (used with params.get)'
+                  />
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='icon'
+                    onClick={() => handleRemove(param.id)}
+                    className='h-7 w-7 text-destructive hover:text-destructive'>
+                    ×
+                  </Button>
+                </div>
+                <div className='flex gap-2 items-center'>
                   <Select
-                    value={booleanDefault}
+                    value={param.type}
                     onValueChange={(v) =>
                       handleUpdate(param.id, {
-                        defaultValue: v === 'unset' ? undefined : v === 'true',
+                        type: v as ScriptParamType,
+                        defaultValue:
+                          v === 'boolean' ? undefined : (param.defaultValue as ScriptParamValue),
                       })
                     }>
                     <SelectTrigger className='w-[110px]'>
-                      <SelectValue placeholder='Default' />
+                      <SelectValue placeholder='Type' />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value='unset'>No default</SelectItem>
-                      <SelectItem value='true'>True</SelectItem>
-                      <SelectItem value='false'>False</SelectItem>
+                      <SelectItem value='string'>Text</SelectItem>
+                      <SelectItem value='number'>Number</SelectItem>
+                      <SelectItem value='boolean'>Boolean</SelectItem>
                     </SelectContent>
                   </Select>
-                ) : (
-                  <Input
-                    className='w-[120px]'
-                    type={param.type === 'number' ? 'number' : 'text'}
-                    value={defaultValueDisplay}
-                    onChange={(e) =>
-                      handleUpdate(param.id, {
-                        defaultValue: coerceDefaultValue(e.target.value, param.type),
-                      })
-                    }
-                    placeholder='Default'
-                  />
-                )}
-                <Button
-                  type='button'
-                  variant='ghost'
-                  size='icon'
-                  onClick={() => handleRemove(param.id)}
-                  className='h-7 w-7 text-destructive hover:text-destructive'>
-                  ×
-                </Button>
+                  {param.type === 'boolean' ? (
+                    <Select
+                      value={booleanDefault}
+                      onValueChange={(v) =>
+                        handleUpdate(param.id, {
+                          defaultValue: v === 'unset' ? undefined : v === 'true',
+                        })
+                      }>
+                      <SelectTrigger className='w-[110px]'>
+                        <SelectValue placeholder='Default' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='unset'>No default</SelectItem>
+                        <SelectItem value='true'>True</SelectItem>
+                        <SelectItem value='false'>False</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      className='w-[120px]'
+                      type={param.type === 'number' ? 'number' : 'text'}
+                      value={defaultValueDisplay}
+                      onChange={(e) =>
+                        handleUpdate(param.id, {
+                          defaultValue: coerceDefaultValue(e.target.value, param.type),
+                        })
+                      }
+                      placeholder='Default'
+                    />
+                  )}
+                </div>
               </div>
             );
           })}
