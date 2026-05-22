@@ -1,6 +1,6 @@
 {
   "name": "@quest-bound/types",
-  "version": "2.2.22",
+  "version": "2.2.23",
   "type": "module",
   "files": [
     "src"
