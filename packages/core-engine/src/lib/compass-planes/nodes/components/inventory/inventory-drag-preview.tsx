@@ -33,6 +33,8 @@ export const InventoryDragPreview = () => {
     fontWeight: 500,
   };
 
+  const isImageMode = (showItemAs ?? 'image') === 'image';
+
   const content = imageUrl ? (
     <img
       src={imageUrl}
@@ -43,10 +45,16 @@ export const InventoryDragPreview = () => {
         objectFit: 'cover',
       }}
     />
-  ) : (
-    <span>
-      {(showItemAs ?? 'image') === 'title' ? item.title : (item.label ?? item.title)}
+  ) : isImageMode ? (
+    <span style={{ fontWeight: 700, fontSize: Math.max(10, Math.min(previewWidth, previewHeight) * 0.38) }}>
+      {item.title
+        .split(' ')
+        .filter(Boolean)
+        .map((w: string) => w[0].toUpperCase())
+        .join('')}
     </span>
+  ) : (
+    <span>{item.title}</span>
   );
 
   return createPortal(<div style={style}>{content}</div>, document.body);

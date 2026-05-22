@@ -259,6 +259,29 @@ const ViewInventoryNodeComponent = ({ component }: { component: Component }) => 
                     objectFit: 'cover',
                   }}
                 />
+              ) : showItemAs === 'image' ? (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(0,0,0,0.18)',
+                    borderRadius: 4,
+                    fontWeight: 700,
+                    fontSize: Math.max(10, Math.min(itemDisplayWidth, itemDisplayHeight) * 0.38),
+                    lineHeight: 1,
+                    userSelect: 'none',
+                    ...getColorStyle(css),
+                    fontFamily: css.fontFamily,
+                  }}>
+                  {invItem.title
+                    .split(' ')
+                    .filter(Boolean)
+                    .map((w: string) => w[0].toUpperCase())
+                    .join('')}
+                </div>
               ) : (
                 <span
                   className='text-xs pl-[4px]'
