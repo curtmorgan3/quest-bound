@@ -27,7 +27,7 @@ import {
 } from '@quest-bound/runtime/context';
 import { DicePanel, PhysicalRollModal } from '@quest-bound/runtime/pages';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppSidebar } from './composites/app-sidebar';
 import { SidebarProvider } from './ui/sidebar';
 import { Toaster } from './ui/sonner';
@@ -40,6 +40,7 @@ export function Layout() {
   useCampaignPlayWorkerPolicySync();
   const navigate = useNavigate();
   const location = useLocation();
+  const [, setSearchParams] = useSearchParams();
   const { currentUser, updateUser, loading } = useUsers();
   const {
     hasCompleted,
@@ -133,14 +134,21 @@ export function Layout() {
       const custom = event as CustomEvent<{ characterId: string; pageId: string }>;
       const { characterId, pageId } = custom.detail || {};
       if (!characterId || !pageId) return;
-      navigate(`/characters/${characterId}?pageId=${pageId}`);
+      if (location.pathname.startsWith('/characters/')) {
+        navigate(`/characters/${characterId}?pageId=${pageId}`);
+      } else {
+        setSearchParams((prev) => {
+          prev.set('pageId', pageId);
+          return prev;
+        });
+      }
     };
 
     window.addEventListener('qbscript:navigateToCharacterPage', handler as EventListener);
     return () => {
       window.removeEventListener('qbscript:navigateToCharacterPage', handler as EventListener);
     };
-  }, [navigate]);
+  }, [navigate, location.pathname, setSearchParams]);
 
   // Load ruleset fonts into the browser
   useFontLoader();

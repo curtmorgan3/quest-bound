@@ -10,7 +10,7 @@ import { resolveChildWindowCanvasPosition } from '@/lib/compass-planes/utils/res
 import { CharacterContext } from '@/stores';
 import type { ChildWindowAnchor, Component, ComponentData } from '@/types';
 import { useCallback, useContext, useMemo, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { getChildWindowCanvasContentSize } from '@/lib/compass-planes/utils/window-open-bounds';
 import type { ViewRenderContext } from '@/lib/compass-planes/nodes/render-node';
 import {
@@ -34,6 +34,8 @@ interface NodeNavigatorProps {
 export const NodeNavigator = ({ children, component, componentData, viewCtx }: NodeNavigatorProps) => {
   const data = componentData ?? getComponentData(component);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [, setSearchParams] = useSearchParams();
   const { scripts } = useScripts();
   const characterContext = useContext(CharacterContext);
   const { openRulesetChildWindow } = useWindowRuntime();
@@ -66,7 +68,14 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
             pageTemplateId,
           );
           if (characterPageId) {
-            navigate(`/characters/${characterId}?pageId=${characterPageId}`);
+            if (location.pathname.startsWith('/characters/')) {
+              navigate(`/characters/${characterId}?pageId=${characterPageId}`);
+            } else {
+              setSearchParams((prev) => {
+                prev.set('pageId', characterPageId);
+                return prev;
+              });
+            }
           }
         }
         return;
@@ -131,6 +140,8 @@ export const NodeNavigator = ({ children, component, componentData, viewCtx }: N
       characterId,
       component.id,
       navigate,
+      location.pathname,
+      setSearchParams,
       openRulesetChildWindow,
       data.childWindowX,
       data.childWindowY,
