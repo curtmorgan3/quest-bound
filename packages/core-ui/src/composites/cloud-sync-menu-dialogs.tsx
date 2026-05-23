@@ -157,17 +157,6 @@ export function CloudSyncMenuDialogs({
             <Button
               type='button'
               variant='outline'
-              className='w-full justify-start gap-2'
-              disabled={pullSyncDisabled}
-              title={!hasCloudCopy ? notOnCloudTitle : undefined}
-              onClick={() => openConfirm('sync')}
-              data-testid='cloud-sync-menu-sync'>
-              <RefreshCw className='h-4 w-4 shrink-0' />
-              Sync
-            </Button>
-            <Button
-              type='button'
-              variant='outline'
               className='w-full justify-start gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive'
               disabled={pullSyncDisabled}
               title={!hasCloudCopy ? notOnCloudTitle : undefined}
