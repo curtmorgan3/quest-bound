@@ -1,4 +1,5 @@
 import { CloudSyncMenuDialogs } from '@/components/composites/cloud-sync-menu-dialogs';
+import { PatreonUpgradeDialog } from '@/components/composites/patreon-upgrade-dialog';
 import {
   Sidebar,
   SidebarContent,
@@ -106,6 +107,7 @@ export function AppSidebar() {
   const helpDocsUrl = `https://docs.questbound.com/docs/${docsPageFromRoute(location.pathname)}`;
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [patreonDialogOpen, setPatreonDialogOpen] = useState(false);
 
   const rulesetId = activeRuleset?.id;
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
@@ -126,8 +128,6 @@ export function AppSidebar() {
   const showCloudSync =
     isCloudConfigured &&
     isAuthenticated &&
-    cloudSyncEnabled &&
-    !cloudSyncEligibilityLoading &&
     rulesetId &&
     !isHomepage &&
     !isLandingRoute &&
@@ -153,6 +153,10 @@ export function AppSidebar() {
   };
 
   const handleCloudSyncClick = () => {
+    if (!cloudSyncEnabled) {
+      setPatreonDialogOpen(true);
+      return;
+    }
     if (!rulesetId) return;
     if (busy || isOffline) return;
     if (syncError) {
@@ -232,9 +236,10 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={handleCloudSyncClick}
-                  disabled={!syncError && (isOffline || busy)}
+                  disabled={cloudSyncEnabled && !syncError && (isOffline || busy)}
                   data-testid='sidebar-cloud-sync'>
                   {(() => {
+                    if (!cloudSyncEnabled) return <CloudUpload />;
                     const Icon = getCloudSyncIcon();
                     return (
                       <Icon
@@ -248,7 +253,7 @@ export function AppSidebar() {
                       />
                     );
                   })()}
-                  <span>{getCloudSyncLabel()}</span>
+                  <span>{cloudSyncEnabled ? getCloudSyncLabel() : 'Cloud sync'}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
@@ -302,7 +307,7 @@ export function AppSidebar() {
         </DrawerDescription>
         <Settings />
       </DrawerContent>
-      {showCloudSync && rulesetId && (
+      {showCloudSync && cloudSyncEnabled && rulesetId && (
         <CloudSyncMenuDialogs
           rulesetId={rulesetId}
           open={pushDialogOpen}
@@ -311,6 +316,7 @@ export function AppSidebar() {
           isOffline={isOffline}
         />
       )}
+      <PatreonUpgradeDialog open={patreonDialogOpen} onOpenChange={setPatreonDialogOpen} />
     </Drawer>
   );
 }

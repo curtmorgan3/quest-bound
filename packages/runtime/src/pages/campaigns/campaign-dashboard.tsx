@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage, Button, Label, Switch } from '@/components';
-import { PageWrapper } from '@/components/composites';
+import { PageWrapper, PatreonUpgradeDialog } from '@/components/composites';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCampaignPlayRealtime } from '@/hooks';
 import { shouldBlockCampaignOrchestration } from '@/lib/campaign-play/campaign-play-orchestration-gate';
@@ -115,8 +115,7 @@ export function CampaignDashboard() {
   const hostCloudUserId = useCloudAuthStore((s) => s.cloudUser?.id ?? null);
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const isCloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
-  const showHostCampaignCloudPanel = cloudSyncEnabled && !isCloudSyncEligibilityLoading;
-  const orchestrationBlocked = shouldBlockCampaignOrchestration(campaignId);
+const orchestrationBlocked = shouldBlockCampaignOrchestration(campaignId);
   const showHostRealtimeReconnectNotice =
     !!campaignId &&
     campaignPlaySession?.campaignId === campaignId &&
@@ -160,6 +159,7 @@ export function CampaignDashboard() {
   const [sceneDocumentPanelOpen, setSceneDocumentPanelOpen] = useState(false);
   const [sceneEventsPanelOpen, setSceneEventsPanelOpen] = useState(false);
   const [guestJoinInviteSheetOpen, setGuestJoinInviteSheetOpen] = useState(false);
+  const [patreonDialogOpen, setPatreonDialogOpen] = useState(false);
   const [hostRealtimeByCampaignId, setHostRealtimeByCampaignId] = useState<Record<string, boolean>>(
     () => loadHostRealtimeByCampaignId(),
   );
@@ -226,6 +226,7 @@ export function CampaignDashboard() {
   useEffect(() => {
     if (!cloudSyncEnabled || isCloudSyncEligibilityLoading) {
       setGuestJoinInviteSheetOpen(false);
+      setPatreonDialogOpen(false);
     }
   }, [cloudSyncEnabled, isCloudSyncEligibilityLoading]);
 
@@ -479,30 +480,40 @@ export function CampaignDashboard() {
             data-testid='scene-events-panel-trigger'>
             <Zap className='h-4 w-4' />
           </Button>
-          {campaignId && showHostCampaignCloudPanel && (
+          {campaignId && (
             <>
               <Button
                 variant='ghost'
                 size='icon'
-                onClick={() => setGuestJoinInviteSheetOpen(true)}
+                onClick={() => {
+                  if (!cloudSyncEnabled) {
+                    setPatreonDialogOpen(true);
+                  } else {
+                    setGuestJoinInviteSheetOpen(true);
+                  }
+                }}
+                disabled={isCloudSyncEligibilityLoading}
                 aria-label='Guest join token and host session'
                 title='Guest join token and host session'
                 data-testid='guest-join-invite-sheet-trigger'>
                 <Globe className={cn('h-4 w-4', hostCampaignRealtimeEnabled && 'text-primary')} />
               </Button>
-              <CampaignPlayInviteSheet
-                open={guestJoinInviteSheetOpen}
-                onOpenChange={setGuestJoinInviteSheetOpen}
-                campaignId={campaign.id}
-                rulesetId={campaign.rulesetId}
-                campaignLabel={campaign.label}
-                defaultCampaignSceneId={defaultCampaignSceneIdForInvite}
-                campaignCharacters={campaignCharacters}
-                charactersById={charactersById}
-                hostCloudUserId={hostCloudUserId}
-                hostRealtimeEnabled={hostCampaignRealtimeEnabled}
-                onHostRealtimeEnabledChange={setHostCampaignRealtimeEnabled}
-              />
+              {cloudSyncEnabled && (
+                <CampaignPlayInviteSheet
+                  open={guestJoinInviteSheetOpen}
+                  onOpenChange={setGuestJoinInviteSheetOpen}
+                  campaignId={campaign.id}
+                  rulesetId={campaign.rulesetId}
+                  campaignLabel={campaign.label}
+                  defaultCampaignSceneId={defaultCampaignSceneIdForInvite}
+                  campaignCharacters={campaignCharacters}
+                  charactersById={charactersById}
+                  hostCloudUserId={hostCloudUserId}
+                  hostRealtimeEnabled={hostCampaignRealtimeEnabled}
+                  onHostRealtimeEnabledChange={setHostCampaignRealtimeEnabled}
+                />
+              )}
+              <PatreonUpgradeDialog open={patreonDialogOpen} onOpenChange={setPatreonDialogOpen} />
             </>
           )}
           <SceneDocumentPanel

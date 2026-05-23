@@ -40,9 +40,6 @@ export function CharacterSidebar() {
   const { documentId, chartId } = useParams<{ documentId?: string; chartId?: string }>();
   const location = useLocation();
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
-  const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
-  const isCloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
-  const showJoinCampaignForCloud = cloudSyncEnabled && !isCloudSyncEligibilityLoading;
   const [joinCampaignOpen, setJoinCampaignOpen] = useState(false);
   const characterId = character?.id;
   const linkedToCampaignLive = useLiveQuery(async () => {
@@ -56,10 +53,10 @@ export function CharacterSidebar() {
   const characterArchetypesPanel = useContext(CharacterArchetypesPanelContext);
 
   useEffect(() => {
-    if (!showJoinCampaignForCloud) {
+    if (!isAuthenticated) {
       setJoinCampaignOpen(false);
     }
-  }, [showJoinCampaignForCloud]);
+  }, [isAuthenticated]);
 
   if (!character) return null;
 
@@ -102,7 +99,7 @@ export function CharacterSidebar() {
 
   return (
     <>
-      {isAuthenticated && showJoinCampaignForCloud && (
+      {isAuthenticated && (
         <JoinCampaignPanel
           open={joinCampaignOpen}
           onOpenChange={setJoinCampaignOpen}
@@ -167,7 +164,7 @@ export function CharacterSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
-          {isAuthenticated && showJoinCampaignForCloud && (
+          {isAuthenticated && (
             <SidebarMenuItem className={isCharacterLinkedToCampaign ? 'text-primary' : ''}>
               <SidebarMenuButton
                 type='button'
