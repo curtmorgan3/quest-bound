@@ -112,7 +112,7 @@ export function AppSidebar() {
   const rulesetId = activeRuleset?.id;
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
-  const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
+  //const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
   const {
     isCloudSynced,
     isSyncing,

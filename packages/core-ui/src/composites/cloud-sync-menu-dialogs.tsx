@@ -24,7 +24,7 @@ import {
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { db, useCloudSyncReviewStore, useCloudSyncSummaryPanelStore } from '@/stores';
 import type { DB } from '@/stores/db/hooks/types';
-import { CloudDownload, CloudUpload, Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { CloudDownload, CloudUpload, Loader2, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface CloudSyncMenuDialogsProps {
