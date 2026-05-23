@@ -22,6 +22,7 @@ import {
   hasRulesetBackup,
   uploadRulesetBackup,
 } from '@/lib/cloud/backup/cloud-backup-service';
+import { useActiveRuleset } from '@/lib/compass-api';
 import { useExportRuleset } from '@/lib/compass-api/hooks/export/use-export-ruleset';
 import { useImportRuleset } from '@/lib/compass-api/hooks/export/use-import-ruleset';
 import { CloudDownload, CloudUpload, Loader2, Trash2 } from 'lucide-react';
@@ -52,6 +53,7 @@ export function CloudSyncMenuDialogs({
   const [deleteFromCloudError, setDeleteFromCloudError] = useState<string | null>(null);
   const [hasBackup, setHasBackup] = useState(false);
 
+  const { activeRuleset } = useActiveRuleset();
   const { exportRuleset } = useExportRuleset(rulesetId);
   const { importRuleset } = useImportRuleset();
 
@@ -82,7 +84,11 @@ export function CloudSyncMenuDialogs({
         toast.error('Export failed');
         return;
       }
-      const { error } = await uploadRulesetBackup(rulesetId, blob);
+      const { error } = await uploadRulesetBackup(rulesetId, blob, {
+        title: activeRuleset?.title ?? '',
+        version: activeRuleset?.version ?? '',
+        isModule: activeRuleset?.isModule ?? false,
+      });
       if (error) {
         toast.error(`Upload failed: ${error}`);
         return;

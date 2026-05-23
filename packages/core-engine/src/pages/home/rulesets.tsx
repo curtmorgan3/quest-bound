@@ -28,10 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { downloadRulesetBackup } from '@/lib/cloud/backup/cloud-backup-service';
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { getNonOwnerCloudInstallRulesetIds } from '@/lib/cloud/sync/non-owner-cloud-install-ids';
-import { pullEntireRulesetFromCloud } from '@/lib/cloud/sync/sync-service';
-import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import {
   useCloudRulesets,
   useImportRuleset,
@@ -39,11 +37,9 @@ import {
   type ImportRulesetResult,
 } from '@/lib/compass-api';
 import { compareVersion } from '@/lib/compass-api/hooks/export/utils';
-import { db, useCloudAuthStore, useCloudSyncSummaryPanelStore } from '@/stores';
-import type { DB } from '@/stores/db/hooks/types';
+import { useCloudAuthStore } from '@/stores';
 import {
   AlertCircle,
-  Building2,
   CheckCircle,
   Cloud,
   Download,
@@ -77,8 +73,6 @@ export const Rulesets = () => {
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
-  const isCloudSynced = useSyncStateStore((s) => s.isCloudSynced);
-  const isCloudSyncing = useSyncStateStore((s) => s.isSyncing);
   const showCloudBadge =
     isCloudConfigured && isAuthenticated && cloudSyncEnabled && !cloudSyncEligibilityLoading;
 
@@ -155,31 +149,6 @@ export const Rulesets = () => {
     };
   }, [deletingRulesetId]);
 
-  useEffect(() => {
-    if (!showCloudBadge || cloudRulesetListFetchOk !== true || cloudRulesetsLoading) return;
-    let cancelled = false;
-    void (async () => {
-      const nonOwnerIds = await getNonOwnerCloudInstallRulesetIds();
-      if (cancelled) return;
-      const cloudIdSet = new Set(cloudRulesets.map((c) => c.id));
-      const staleLocal = rulesets.filter((r) => nonOwnerIds.has(r.id) && !cloudIdSet.has(r.id));
-      for (const r of staleLocal) {
-        if (cancelled) return;
-        await deleteRuleset(r.id);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    showCloudBadge,
-    cloudRulesetListFetchOk,
-    cloudRulesetsLoading,
-    cloudRulesets,
-    rulesets,
-    deleteRuleset,
-  ]);
-
   const handleDelete = async (id: string) => {
     setDeletingRulesetId(id);
     try {
@@ -197,12 +166,14 @@ export const Rulesets = () => {
 
   const handlePullUpdateFromCloud = async (rulesetId: string) => {
     setCloudUpdateError(null);
-    const result = await pullEntireRulesetFromCloud(rulesetId, db as DB);
-    if (result.error) {
-      setCloudUpdateError(result.error);
+    const { blob, error: downloadError } = await downloadRulesetBackup(rulesetId);
+    if (downloadError || !blob) {
+      setCloudUpdateError(downloadError ?? 'Download failed');
       return;
     }
-    useCloudSyncSummaryPanelStore.getState().showSummary(result);
+    const file = new File([blob], 'cloud-backup.zip', { type: 'application/zip' });
+    const result = await importRuleset(file, { forceReplace: true });
+    if (!result.success) setCloudUpdateError(result.message);
   };
 
   const handleCreate = async () => {
@@ -453,10 +424,8 @@ export const Rulesets = () => {
                 const cloudSummary = cloudRulesetById.get(r.id);
                 const cloudHasNewerVersion =
                   !!cloudSummary &&
-                  isCloudSynced(r.id) &&
                   compareVersion(cloudSummary.version, r.version ?? '') > 0;
                 const cloudUpdateBusy =
-                  isCloudSyncing ||
                   isInstallingCloud ||
                   !!deletingRulesetId ||
                   !!deletingCloudRulesetId;
@@ -473,15 +442,8 @@ export const Rulesets = () => {
                       <div className='flex min-w-0 items-baseline justify-between gap-2'>
                         <h2 className='flex min-w-0 items-center gap-1.5 text-sm font-semibold'>
                           <span className='min-w-0 truncate'>{r.title}</span>
-                          {showCloudBadge && isCloudSynced(r.id) ? (
+                          {showCloudBadge && !!cloudSummary ? (
                             <span className='flex shrink-0 items-center gap-1'>
-                              {cloudSummary?.linkedToAdministeredOrganization ? (
-                                <Building2
-                                  className='h-3.5 w-3.5 text-muted-foreground'
-                                  aria-label='Linked to organization you administer'
-                                  data-testid='ruleset-org-badge'
-                                />
-                              ) : null}
                               <Cloud
                                 className='h-3.5 w-3.5 text-muted-foreground'
                                 aria-label='Synced with Quest Bound Cloud'
@@ -645,13 +607,6 @@ export const Rulesets = () => {
                     <div className='flex min-w-0 items-baseline justify-between gap-2'>
                       <h2 className='flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold'>
                         <span className='truncate'>{r.title}</span>
-                        {r.linkedToAdministeredOrganization ? (
-                          <Building2
-                            className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
-                            aria-label='Linked to organization you administer'
-                            data-testid='ruleset-org-badge'
-                          />
-                        ) : null}
                         <Cloud
                           className='h-3.5 w-3.5 shrink-0 text-muted-foreground'
                           aria-label='In Quest Bound Cloud'
@@ -661,52 +616,47 @@ export const Rulesets = () => {
                       <span className='shrink-0 text-xs text-muted-foreground'>v{r.version}</span>
                     </div>
                     <div className='flex items-center gap-2'>
-                      {r.ownedByCurrentUser ? (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              className='h-8 flex-1 gap-1 text-destructive hover:text-destructive'
-                              disabled={isInstallingCloud || !!deletingCloudRulesetId}
-                              data-testid='ruleset-card-cloud-delete'>
-                              Delete
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete from Quest Bound Cloud?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This permanently removes this ruleset and all cloud data tied to it
-                                for your account (campaigns, characters, assets, and other synced
-                                content). This cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel
-                                disabled={deletingCloudRulesetId === r.id}
-                                data-testid='ruleset-card-cloud-delete-cancel'>
-                                Cancel
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                                data-testid='ruleset-card-cloud-delete-confirm'
-                                disabled={deletingCloudRulesetId === r.id}
-                                onClick={() => void handleCloudDelete(r.id)}>
-                                Delete from cloud
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      ) : null}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant='ghost'
+                            size='sm'
+                            className='h-8 flex-1 gap-1 text-destructive hover:text-destructive'
+                            disabled={isInstallingCloud || !!deletingCloudRulesetId}
+                            data-testid='ruleset-card-cloud-delete'>
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete from Quest Bound Cloud?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This removes the cloud backup for this ruleset. Your local copy on
+                              this device is not deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel
+                              disabled={deletingCloudRulesetId === r.id}
+                              data-testid='ruleset-card-cloud-delete-cancel'>
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                              data-testid='ruleset-card-cloud-delete-confirm'
+                              disabled={deletingCloudRulesetId === r.id}
+                              onClick={() => void handleCloudDelete(r.id)}>
+                              Delete from cloud
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                       <Button
                         variant='outline'
                         size='sm'
                         className='h-8 flex-1 gap-1'
                         disabled={isInstallingCloud || !!deletingCloudRulesetId}
-                        onClick={() =>
-                          void installFromCloud(r.id, { ownedByCurrentUser: r.ownedByCurrentUser })
-                        }
+                        onClick={() => void installFromCloud(r.id)}
                         data-testid='ruleset-card-install'>
                         {installingRulesetId === r.id ? (
                           <>

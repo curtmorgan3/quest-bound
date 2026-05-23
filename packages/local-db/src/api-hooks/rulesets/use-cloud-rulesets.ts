@@ -1,27 +1,59 @@
 import {
-  deleteRulesetFromCloud,
-  installFromCloud as doInstallFromCloud,
-  listCloudRulesets,
-  type CloudRulesetSummary,
-} from '@/lib/cloud/sync/sync-service';
+  deleteRulesetBackup,
+  downloadRulesetBackup,
+  listRulesetBackups,
+} from '@/lib/cloud/backup/cloud-backup-service';
 import { isCloudConfigured } from '@/lib/cloud/client';
-import { db } from '../../db';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { useCallback, useEffect, useState } from 'react';
+import { useImportRuleset } from '../export/use-import-ruleset';
 
-export type { CloudRulesetSummary };
+export interface CloudRulesetSummary {
+  id: string;
+  title: string;
+  version: string;
+  image?: string | null;
+  isModule?: boolean;
+  ownedByCurrentUser: boolean;
+  linkedToAdministeredOrganization: boolean;
+}
 
 export function useCloudRulesets() {
   const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
   const cloudSyncEnabled = useCloudAuthStore((s) => s.cloudSyncEnabled);
   const cloudSyncEligibilityLoading = useCloudAuthStore((s) => s.isCloudSyncEligibilityLoading);
-  const cloudRulesetListEpoch = useCloudAuthStore((s) => s.cloudRulesetListEpoch);
   const [cloudRulesets, setCloudRulesets] = useState<CloudRulesetSummary[]>([]);
-  /** `true` after a successful list fetch; `false` on error; `null` while loading or when cloud list is not fetched. */
   const [cloudRulesetListFetchOk, setCloudRulesetListFetchOk] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
   const [installingRulesetId, setInstallingRulesetId] = useState<string | null>(null);
   const [deletingRulesetId, setDeletingRulesetId] = useState<string | null>(null);
+
+  const { importRuleset } = useImportRuleset();
+
+  const fetchBackups = useCallback(async () => {
+    setLoading(true);
+    setCloudRulesetListFetchOk(null);
+    try {
+      const backups = await listRulesetBackups();
+      setCloudRulesets(
+        backups.map((b) => ({
+          id: b.rulesetId,
+          title: b.title,
+          version: b.version,
+          isModule: b.isModule,
+          image: null,
+          ownedByCurrentUser: true,
+          linkedToAdministeredOrganization: false,
+        })),
+      );
+      setCloudRulesetListFetchOk(true);
+    } catch {
+      setCloudRulesets([]);
+      setCloudRulesetListFetchOk(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isCloudConfigured || !isAuthenticated || !cloudSyncEnabled || cloudSyncEligibilityLoading) {
@@ -29,60 +61,45 @@ export function useCloudRulesets() {
       setCloudRulesetListFetchOk(null);
       return;
     }
-    let cancelled = false;
-    setLoading(true);
-    setCloudRulesetListFetchOk(null);
-    listCloudRulesets()
-      .then((list) => {
-        if (!cancelled) {
-          setCloudRulesets(list);
-          setCloudRulesetListFetchOk(true);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCloudRulesets([]);
-          setCloudRulesetListFetchOk(false);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated, cloudSyncEnabled, cloudSyncEligibilityLoading, cloudRulesetListEpoch]);
+    void fetchBackups();
+  }, [isAuthenticated, cloudSyncEnabled, cloudSyncEligibilityLoading, fetchBackups]);
 
   const installFromCloud = useCallback(
-    async (rulesetId: string, options?: { ownedByCurrentUser?: boolean }) => {
+    async (rulesetId: string) => {
       setInstallingRulesetId(rulesetId);
       try {
-        await doInstallFromCloud(rulesetId, db, options);
+        const { blob, error } = await downloadRulesetBackup(rulesetId);
+        if (error || !blob) return { error: error ?? 'No backup found' };
+        const file = new File([blob], 'cloud-backup.zip', { type: 'application/zip' });
+        const result = await importRuleset(file);
+        if (!result.success) return { error: result.message };
+        return {};
       } finally {
         setInstallingRulesetId(null);
       }
     },
-    [],
+    [importRuleset],
   );
 
-  const deleteFromCloud = useCallback(async (rulesetId: string) => {
-    setDeletingRulesetId(rulesetId);
-    try {
-      const result = await deleteRulesetFromCloud(rulesetId);
-      if (result.error) return result;
-      const list = await listCloudRulesets();
-      setCloudRulesets(list);
-      setCloudRulesetListFetchOk(true);
-      return {};
-    } finally {
-      setDeletingRulesetId(null);
-    }
-  }, []);
+  const deleteFromCloud = useCallback(
+    async (rulesetId: string) => {
+      setDeletingRulesetId(rulesetId);
+      try {
+        const result = await deleteRulesetBackup(rulesetId);
+        if (result.error) return result;
+        await fetchBackups();
+        return {};
+      } finally {
+        setDeletingRulesetId(null);
+      }
+    },
+    [fetchBackups],
+  );
 
   return {
     cloudRulesets,
     cloudRulesetListFetchOk,
-    loading: loading,
+    loading,
     installFromCloud,
     deleteFromCloud,
     isInstalling: installingRulesetId !== null,
