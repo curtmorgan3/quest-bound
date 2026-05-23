@@ -61,7 +61,6 @@ export const Rulesets = () => {
   const { importRuleset, isImporting, importStep } = useImportRuleset();
   const {
     cloudRulesets,
-    cloudRulesetListFetchOk,
     installFromCloud,
     deleteFromCloud,
     loading: cloudRulesetsLoading,
