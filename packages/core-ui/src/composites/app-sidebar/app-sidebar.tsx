@@ -13,6 +13,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { hasRulesetBackup } from '@/lib/cloud/backup/cloud-backup-service';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
 import { useActiveRuleset, useUsers } from '@/lib/compass-api';
@@ -125,6 +126,8 @@ export function AppSidebar() {
   const committing = useCloudSyncReviewStore((s) => s.committing);
   const reviewOpen = useCloudSyncReviewStore((s) => s.open);
 
+  const [hasCloudBackup, setHasCloudBackup] = useState(false);
+
   const showCloudSync =
     isCloudConfigured &&
     isAuthenticated &&
@@ -134,7 +137,7 @@ export function AppSidebar() {
     !isCharacterRoute &&
     !isCampaignsRoute &&
     !isDevTools;
-  const synced = rulesetId ? isCloudSynced(rulesetId) : false;
+  const synced = hasCloudBackup || (rulesetId ? isCloudSynced(rulesetId) : false);
   const busy = isSyncing || planning || committing || reviewOpen;
   const isOffline = !navigator.onLine;
 
@@ -165,6 +168,14 @@ export function AppSidebar() {
     }
     setPushDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (rulesetId && cloudSyncEnabled) {
+      void hasRulesetBackup(rulesetId).then(setHasCloudBackup);
+    } else {
+      setHasCloudBackup(false);
+    }
+  }, [rulesetId, cloudSyncEnabled, pushDialogOpen]);
 
   useEffect(() => {
     setSettingsOpen(false);

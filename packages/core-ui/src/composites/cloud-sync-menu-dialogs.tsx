@@ -17,15 +17,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  deleteRulesetFromCloud,
-  pullEntireRulesetFromCloud,
-  pushEntireRulesetToCloud,
-} from '@/lib/cloud/sync/sync-service';
-import { useSyncStateStore } from '@/lib/cloud/sync/sync-state';
-import { db, useCloudSyncReviewStore, useCloudSyncSummaryPanelStore } from '@/stores';
-import type { DB } from '@/stores/db/hooks/types';
+  deleteRulesetBackup,
+  downloadRulesetBackup,
+  hasRulesetBackup,
+  uploadRulesetBackup,
+} from '@/lib/cloud/backup/cloud-backup-service';
+import { useExportRuleset } from '@/lib/compass-api/hooks/export/use-export-ruleset';
+import { useImportRuleset } from '@/lib/compass-api/hooks/export/use-import-ruleset';
 import { CloudDownload, CloudUpload, Loader2, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export interface CloudSyncMenuDialogsProps {
   rulesetId: string;
@@ -35,7 +36,7 @@ export interface CloudSyncMenuDialogsProps {
   isOffline: boolean;
 }
 
-type ConfirmKind = 'push' | 'pull' | 'sync' | 'deleteCloud' | null;
+type ConfirmKind = 'push' | 'pull' | 'deleteCloud' | null;
 
 export function CloudSyncMenuDialogs({
   rulesetId,
@@ -44,15 +45,20 @@ export function CloudSyncMenuDialogs({
   busy,
   isOffline,
 }: CloudSyncMenuDialogsProps) {
-  const startReview = useCloudSyncReviewStore((s) => s.startReview);
-  const loadSyncedRulesetIds = useSyncStateStore((s) => s.loadSyncedRulesetIds);
-  const hasCloudCopy = useSyncStateStore((s) => s.syncedRulesetIds.has(rulesetId));
   const [confirm, setConfirm] = useState<ConfirmKind>(null);
   const [pushing, setPushing] = useState(false);
   const [pulling, setPulling] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [deletingFromCloud, setDeletingFromCloud] = useState(false);
   const [deleteFromCloudError, setDeleteFromCloudError] = useState<string | null>(null);
+  const [hasBackup, setHasBackup] = useState(false);
+
+  const { exportRuleset } = useExportRuleset(rulesetId);
+  const { importRuleset } = useImportRuleset();
+
+  const loadHasBackup = useCallback(async () => {
+    const result = await hasRulesetBackup(rulesetId);
+    setHasBackup(result);
+  }, [rulesetId]);
 
   const openConfirm = useCallback(
     (kind: Exclude<ConfirmKind, null>) => {
@@ -65,17 +71,25 @@ export function CloudSyncMenuDialogs({
   const closeConfirm = useCallback(() => setConfirm(null), []);
 
   useEffect(() => {
-    if (open) void loadSyncedRulesetIds();
-  }, [open, loadSyncedRulesetIds]);
+    if (open) void loadHasBackup();
+  }, [open, loadHasBackup]);
 
   const handlePushConfirm = async () => {
     setPushing(true);
     try {
-      const result = await pushEntireRulesetToCloud(rulesetId, db as DB);
-      if (!result.error) {
-        closeConfirm();
-        useCloudSyncSummaryPanelStore.getState().showSummary(result);
+      const blob = await exportRuleset({ returnBlob: true });
+      if (!(blob instanceof Blob)) {
+        toast.error('Export failed');
+        return;
       }
+      const { error } = await uploadRulesetBackup(rulesetId, blob);
+      if (error) {
+        toast.error(`Upload failed: ${error}`);
+        return;
+      }
+      setHasBackup(true);
+      closeConfirm();
+      toast.success('Ruleset backed up to the cloud');
     } finally {
       setPushing(false);
     }
@@ -84,23 +98,21 @@ export function CloudSyncMenuDialogs({
   const handlePullConfirm = async () => {
     setPulling(true);
     try {
-      const result = await pullEntireRulesetFromCloud(rulesetId, db as DB);
-      if (!result.error) {
-        closeConfirm();
-        useCloudSyncSummaryPanelStore.getState().showSummary(result);
+      const { blob, error } = await downloadRulesetBackup(rulesetId);
+      if (error || !blob) {
+        toast.error(`Download failed: ${error ?? 'No backup found'}`);
+        return;
       }
+      const file = new File([blob], 'cloud-backup.zip', { type: 'application/zip' });
+      const result = await importRuleset(file, { forceReplace: true });
+      if (!result.success) {
+        toast.error(`Import failed: ${result.message}`);
+        return;
+      }
+      closeConfirm();
+      toast.success('Ruleset restored from cloud backup');
     } finally {
       setPulling(false);
-    }
-  };
-
-  const handleSyncConfirm = async () => {
-    setSyncing(true);
-    try {
-      await startReview(rulesetId, db as DB);
-    } finally {
-      setSyncing(false);
-      closeConfirm();
     }
   };
 
@@ -108,20 +120,20 @@ export function CloudSyncMenuDialogs({
     setDeleteFromCloudError(null);
     setDeletingFromCloud(true);
     try {
-      const result = await deleteRulesetFromCloud(rulesetId);
-      if (result.error) {
-        setDeleteFromCloudError(result.error);
+      const { error } = await deleteRulesetBackup(rulesetId);
+      if (error) {
+        setDeleteFromCloudError(error);
         return;
       }
-      await loadSyncedRulesetIds();
+      setHasBackup(false);
       closeConfirm();
     } finally {
       setDeletingFromCloud(false);
     }
   };
 
-  const actionBusy = pushing || pulling || syncing;
-  const pullSyncDisabled = busy || isOffline || !hasCloudCopy;
+  const actionBusy = pushing || pulling;
+  const pullDeleteDisabled = busy || isOffline || !hasBackup;
   const notOnCloudTitle = 'Push this ruleset to the cloud first';
 
   return (
@@ -147,8 +159,8 @@ export function CloudSyncMenuDialogs({
               type='button'
               variant='outline'
               className='w-full justify-start gap-2'
-              disabled={pullSyncDisabled}
-              title={!hasCloudCopy ? notOnCloudTitle : undefined}
+              disabled={pullDeleteDisabled}
+              title={!hasBackup ? notOnCloudTitle : undefined}
               onClick={() => openConfirm('pull')}
               data-testid='cloud-sync-menu-pull'>
               <CloudDownload className='h-4 w-4 shrink-0' />
@@ -158,8 +170,8 @@ export function CloudSyncMenuDialogs({
               type='button'
               variant='outline'
               className='w-full justify-start gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive'
-              disabled={pullSyncDisabled}
-              title={!hasCloudCopy ? notOnCloudTitle : undefined}
+              disabled={pullDeleteDisabled}
+              title={!hasBackup ? notOnCloudTitle : undefined}
               onClick={() => {
                 setDeleteFromCloudError(null);
                 openConfirm('deleteCloud');
@@ -177,8 +189,8 @@ export function CloudSyncMenuDialogs({
           <AlertDialogHeader>
             <AlertDialogTitle>Push entire ruleset to the cloud?</AlertDialogTitle>
             <AlertDialogDescription>
-              This uploads your full local ruleset and overwrites matching data in Quest Bound
-              Cloud. Other devices will see this copy after they sync.
+              This exports your full local ruleset and uploads it to Quest Bound Cloud, replacing any
+              existing cloud backup. Other devices can pull this copy to get the latest version.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -186,7 +198,7 @@ export function CloudSyncMenuDialogs({
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                handlePushConfirm();
+                void handlePushConfirm();
               }}
               disabled={actionBusy}>
               {pushing ? (
@@ -207,9 +219,8 @@ export function CloudSyncMenuDialogs({
           <AlertDialogHeader>
             <AlertDialogTitle>Replace this device with the cloud copy?</AlertDialogTitle>
             <AlertDialogDescription>
-              This downloads the ruleset from Quest Bound Cloud and overwrites local changes on this
-              device with the cloud version. Unsaved local edits that are not on the server will be
-              lost.
+              This downloads the cloud backup and overwrites your local copy of this ruleset.
+              Unsaved local changes that are not in the cloud backup will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -217,7 +228,7 @@ export function CloudSyncMenuDialogs({
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
-                handlePullConfirm();
+                void handlePullConfirm();
               }}
               disabled={actionBusy}>
               {pulling ? (
@@ -227,36 +238,6 @@ export function CloudSyncMenuDialogs({
                 </>
               ) : (
                 'Pull from Cloud'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={confirm === 'sync'} onOpenChange={(v) => !v && closeConfirm()}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Sync with Quest Bound Cloud?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This merges local and cloud changes, saving the merged copy locally and on the server.
-              You may review incoming updates or resolve merge conflicts before changes are applied.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={actionBusy}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleSyncConfirm();
-              }}
-              disabled={actionBusy}>
-              {syncing ? (
-                <>
-                  <Loader2 className='h-4 w-4 animate-spin' />
-                  Starting…
-                </>
-              ) : (
-                'Sync'
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -276,8 +257,7 @@ export function CloudSyncMenuDialogs({
             <AlertDialogTitle>Delete this ruleset from Quest Bound Cloud?</AlertDialogTitle>
             <AlertDialogDescription className='space-y-2'>
               <span className='block'>
-                This removes the cloud copy and all synced server data for this ruleset (campaigns,
-                characters, assets, and organization sharing). Your local ruleset on this device is
+                This removes the cloud backup for this ruleset. Your local copy on this device is
                 not deleted.
               </span>
               <span className='block font-medium text-destructive'>This cannot be undone.</span>

@@ -145,6 +145,8 @@ export interface ImportRulesetOptions {
   duplicateVersion?: string;
   /** When set, import content only into this ruleset id (ruleset must already exist). Skips ruleset creation and version checks. Used for add-module-from-zip. */
   contentOnlyIntoRulesetId?: string;
+  /** When true, delete the existing ruleset and replace it unconditionally. Used for cloud pull. */
+  forceReplace?: boolean;
 }
 
 export interface ImportRulesetResult {
@@ -907,7 +909,9 @@ export const useImportRuleset = () => {
         // Check for existing ruleset with same id
         const existingRuleset = await db.rulesets.get(newRulesetId);
         if (existingRuleset) {
-          if (existingRuleset.version === newRuleset.version) {
+          if (options?.forceReplace) {
+            await deleteRulesetAndRelatedData(newRulesetId);
+          } else if (existingRuleset.version === newRuleset.version) {
             // Same id and version: either request duplicate-as-new confirmation or perform duplication
             if (options?.duplicateAsNew) {
               const duplicateTitle = options.duplicateTitle?.trim() || `${newRuleset.title} (copy)`;
@@ -978,8 +982,7 @@ export const useImportRuleset = () => {
               },
               errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
             };
-          }
-          if (compareVersion(newRuleset.version, existingRuleset.version) > 0) {
+          } else if (compareVersion(newRuleset.version, existingRuleset.version) > 0) {
             // Uploaded version is higher: prompt to replace unless already confirmed
             if (!options?.replaceIfNewer) {
               return {
