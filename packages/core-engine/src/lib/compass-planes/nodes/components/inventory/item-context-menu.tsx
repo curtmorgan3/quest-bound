@@ -15,9 +15,10 @@ import { injectCharacterData } from '@/lib/compass-planes/utils';
 import { activateButtonStyle } from '@/palette';
 import { CharacterContext, DiceContext, type InventoryItemWithData } from '@/stores';
 import { parseTextForDiceRolls, useKeyListeners } from '@/utils';
-import { Check, Drumstick, Shirt, Trash, Zap } from 'lucide-react';
+import { Check, Drumstick, Send, Shirt, Trash, Zap } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { SendItemDialog } from './send-item-dialog';
 
 export type ContextMenuState = {
   item: InventoryItemWithData;
@@ -100,6 +101,11 @@ export const ItemContextMenu = ({
       : [];
   const [multiSelectDialogOpen, setMultiSelectDialogOpen] = useState(false);
   const [pendingSelection, setPendingSelection] = useState<string[]>([]);
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+
+  const isInCampaignScene = Boolean(
+    characterContext?.campaignId && characterContext?.campaignSceneId,
+  );
 
   const openMultiSelectDialog = () => {
     if (!inventoryAttribute) return;
@@ -586,6 +592,27 @@ export const ItemContextMenu = ({
           }}>
           <Trash size={16} />
         </button>
+        {isInCampaignScene && (
+          <button
+            type='button'
+            title='Send to another character'
+            onClick={() => setIsSendDialogOpen(true)}
+            onPointerDown={(e) => e.stopPropagation()}
+            style={{
+              width: '32px',
+              display: 'flex',
+              padding: '8px',
+              justifyContent: 'center',
+              backgroundColor: '#2a3a4a',
+              border: '1px solid #356',
+              borderRadius: 4,
+              color: '#88aaff',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}>
+            <Send size={16} />
+          </button>
+        )}
         {isActionOrItemAndHasScript && (
           <button
             type='button'
@@ -640,6 +667,21 @@ export const ItemContextMenu = ({
           </button>
         ))}
       </div>
+
+      {isInCampaignScene && (
+        <SendItemDialog
+          item={item}
+          campaignId={characterContext!.campaignId!}
+          campaignSceneId={characterContext!.campaignSceneId!}
+          currentCharacterId={characterContext!.character.id}
+          open={isSendDialogOpen}
+          onOpenChange={setIsSendDialogOpen}
+          onSent={() => {
+            onRemove();
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 
