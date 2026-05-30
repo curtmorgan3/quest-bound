@@ -43,9 +43,10 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@quest-bound/cloud": "2.2.30",
-    "@quest-bound/local-db": "2.2.30",
-    "@quest-bound/types": "2.2.30"
+    "@quest-bound/cloud": "^2.2.30",
+    "@quest-bound/local-db": "^2.2.30",
+    "@quest-bound/types": "^2.2.30",
+    "react-qr-code": "^2.0.21"
   },
   "peerDependencies": {
     "@quest-bound/cloud": "^2.2.30",

@@ -12,6 +12,7 @@ import { useCloudAuthStore } from '@/stores';
 import type { CampaignCharacter, Character } from '@/types';
 import { Copy, Globe, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import QRCode from 'react-qr-code';
 import { toast } from 'sonner';
 
 interface CampaignPlayInvitePanelProps {
@@ -149,6 +150,11 @@ export function CampaignPlayInvitePanel({
         <p className='break-all rounded bg-background/80 px-2 py-1 font-mono text-xs text-muted-foreground'>
           {joinToken}
         </p>
+      )}
+      {joinToken && (
+        <div className='flex justify-center rounded-md bg-white p-3'>
+          <QRCode value={joinToken} size={160} />
+        </div>
       )}
     </>
   );

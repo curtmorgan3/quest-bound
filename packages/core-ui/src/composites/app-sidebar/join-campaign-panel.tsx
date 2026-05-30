@@ -1,5 +1,11 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -25,9 +31,98 @@ import { SignInSignUpModal } from '../../signin';
 import { db, useCurrentUser } from '@/stores';
 import type { Character } from '@quest-bound/types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Globe } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import jsQR from 'jsqr';
+import { Globe, ScanLine } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+
+function QRCaptureModal({
+  open,
+  onOpenChange,
+  onCapture,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCapture: (value: string) => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+
+        const scan = () => {
+          const video = videoRef.current;
+          const canvas = canvasRef.current;
+          if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+            rafRef.current = requestAnimationFrame(scan);
+            return;
+          }
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          ctx.drawImage(video, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const result = jsQR(imageData.data, imageData.width, imageData.height);
+          if (result?.data) {
+            onCapture(result.data);
+            onOpenChange(false);
+            return;
+          }
+          rafRef.current = requestAnimationFrame(scan);
+        };
+        rafRef.current = requestAnimationFrame(scan);
+      } catch {
+        toast.error('Camera access denied or unavailable');
+        onOpenChange(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
+  }, [open, onCapture, onOpenChange]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className='z-[1100] sm:max-w-sm'>
+        <DialogHeader>
+          <DialogTitle>Scan QR Code</DialogTitle>
+        </DialogHeader>
+        <div className='relative overflow-hidden rounded-md bg-black aspect-square'>
+          <video ref={videoRef} className='h-full w-full object-cover' muted playsInline />
+          <canvas ref={canvasRef} className='hidden' />
+          <div className='pointer-events-none absolute inset-0 flex items-center justify-center'>
+            <div className='h-48 w-48 rounded-md border-2 border-white/60' />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 type CharacterCampaignLink = {
   campaignCharacterId: string;
@@ -47,6 +142,7 @@ export function JoinCampaignPanel({ open, onOpenChange, character }: JoinCampaig
   const [busy, setBusy] = useState(false);
   const [leavingCampaignCharacterId, setLeavingCampaignCharacterId] = useState<string | null>(null);
   const [signInModalOpen, setSignInModalOpen] = useState(false);
+  const [qrScanOpen, setQrScanOpen] = useState(false);
 
   const campaignLinks = useLiveQuery(
     async (): Promise<CharacterCampaignLink[]> => {
@@ -259,18 +355,28 @@ export function JoinCampaignPanel({ open, onOpenChange, character }: JoinCampaig
                     disabled={busy || leavingCampaignCharacterId !== null}
                   />
                 </div>
-                <Button
-                  type='button'
-                  disabled={
-                    busy ||
-                    leavingCampaignCharacterId !== null ||
-                    !isCloudConfigured ||
-                    !currentUser
-                  }
-                  onClick={() => void runJoin()}
-                  data-testid='sidebar-join-campaign-submit'>
-                  {busy ? 'Joining…' : 'Join campaign'}
-                </Button>
+                <div className='flex gap-2'>
+                  <Button
+                    type='button'
+                    disabled={
+                      busy ||
+                      leavingCampaignCharacterId !== null ||
+                      !isCloudConfigured ||
+                      !currentUser
+                    }
+                    onClick={() => void runJoin()}
+                    data-testid='sidebar-join-campaign-submit'>
+                    {busy ? 'Joining…' : 'Join campaign'}
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    disabled={busy || leavingCampaignCharacterId !== null}
+                    onClick={() => setQrScanOpen(true)}>
+                    <ScanLine className='mr-1 size-4' />
+                    Capture QR Code
+                  </Button>
+                </div>
               </>
             )}
           </div>
@@ -281,6 +387,11 @@ export function JoinCampaignPanel({ open, onOpenChange, character }: JoinCampaig
         onOpenChange={setSignInModalOpen}
         onSuccess={() => void runJoin()}
         mode='default'
+      />
+      <QRCaptureModal
+        open={qrScanOpen}
+        onOpenChange={setQrScanOpen}
+        onCapture={(value) => setTokenInput(value)}
       />
     </>
   );
