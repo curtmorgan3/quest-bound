@@ -131,7 +131,7 @@ export const SYNC_TABLE_CONFIGS: SyncTableConfig[] = [
   {
     tableName: 'characters',
     remoteTableName: 'characters',
-    excludedFields: ['image', 'archetypeIds'],
+    excludedFields: ['image', 'archetypeIds', 'lastViewedPageId'],
     hasRulesetId: true,
   },
   {

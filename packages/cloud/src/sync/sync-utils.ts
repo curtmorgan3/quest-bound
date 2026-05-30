@@ -255,6 +255,12 @@ export function prepareRemoteForLocal(
     return out;
   }
   const out = toCamelCaseKeys(record);
+  if (tableName) {
+    const config = getSyncTableConfig(tableName);
+    for (const field of config?.excludedFields ?? []) {
+      delete out[field];
+    }
+  }
   if (tableName === 'documents') {
     const raw = out.sortOrder;
     const n = typeof raw === 'number' ? raw : Number(raw);
