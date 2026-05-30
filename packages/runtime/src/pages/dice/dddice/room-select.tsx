@@ -110,7 +110,7 @@ export const RoomSelect = () => {
             <SelectTrigger id='dice-room-select' className='w-fit min-w-[8rem]'>
               <SelectValue placeholder='Select room' />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='z-[950]'>
               {availableRooms.map(({ slug, name }) => (
                 <SelectItem key={slug} value={slug}>
                   {name}
