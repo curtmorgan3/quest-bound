@@ -82,7 +82,7 @@ const SendItemCharacterRow = ({ characterId, item, onSent }: SendItemCharacterRo
     await addInventoryItem({
       type: item.type,
       entityId: item.entityId,
-      componentId: item.componentId,
+      componentId: '',
       quantity: item.quantity,
       x: 0,
       y: 0,
