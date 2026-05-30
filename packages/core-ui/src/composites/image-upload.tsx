@@ -1,8 +1,9 @@
 import { useAssets } from '@/lib/compass-api';
 import { AssetLookup } from '../api-components';
 import { ImagePlus, Save, Trash } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
+import { ScrollArea } from '../ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -105,6 +106,9 @@ export const ImageUpload = ({
   const [urlInput, setUrlInput] = useState('');
   const [urlNameInput, setUrlNameInput] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [iconQuery, setIconQuery] = useState('');
+  const [iconResults, setIconResults] = useState<string[]>([]);
+  const [iconSearching, setIconSearching] = useState(false);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -155,6 +159,50 @@ export const ImageUpload = ({
     }
   };
 
+  useEffect(() => {
+    const query = iconQuery.trim();
+    if (!query) {
+      setIconResults([]);
+      return;
+    }
+    setIconSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://api.iconify.design/search?query=${encodeURIComponent(query)}&limit=60`,
+        );
+        const data = await res.json();
+        setIconResults(data.icons ?? []);
+      } catch {
+        setIconResults([]);
+      } finally {
+        setIconSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [iconQuery]);
+
+  const handleIconSelect = async (iconId: string) => {
+    const [prefix, name] = iconId.split(':');
+    const iconUrl = `https://api.iconify.design/${prefix}/${name}.svg`;
+    setLoading(true);
+    try {
+      const assetId = await createUrlAsset(iconUrl, {
+        filename: iconId,
+        rulesetId: rulesetId ?? null,
+        worldId: worldId ?? null,
+      });
+      onUpload?.(assetId);
+      setIconQuery('');
+      setIconResults([]);
+      setDialogOpen(false);
+    } catch (e) {
+      setUrlError(e instanceof Error ? e.message : 'Failed to add icon');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isImageUrl = (src: string) => src.startsWith('http://') || src.startsWith('https://');
 
   const handleClick = () => {
@@ -162,6 +210,8 @@ export const ImageUpload = ({
     setUrlError(null);
     setUrlInput(image && isImageUrl(image) ? image : '');
     setUrlNameInput('');
+    setIconQuery('');
+    setIconResults([]);
     setDialogOpen(true);
   };
 
@@ -296,6 +346,51 @@ export const ImageUpload = ({
               </Button>
             </div>
             {urlError && <p className='text-destructive text-sm'>{urlError}</p>}
+
+            <div className='relative'>
+              <div className='absolute inset-0 flex items-center'>
+                <span className='w-full border-t' />
+              </div>
+              <div className='relative flex justify-center text-muted-foreground text-xs uppercase'>
+                or choose an icon
+              </div>
+            </div>
+            <div className='flex flex-col gap-2'>
+              <Input
+                type='text'
+                placeholder='Search icons (e.g. sword, shield, dragon)'
+                value={iconQuery}
+                onChange={(e) => setIconQuery(e.target.value)}
+              />
+              {iconSearching && (
+                <p className='text-xs text-muted-foreground'>Searching...</p>
+              )}
+              {iconResults.length > 0 && (
+                <ScrollArea className='h-40 rounded border'>
+                  <div className='grid grid-cols-8 gap-1 p-2'>
+                    {iconResults.map((iconId) => {
+                      const [prefix, name] = iconId.split(':');
+                      const src = `https://api.iconify.design/${prefix}/${name}.svg`;
+                      return (
+                        <button
+                          key={iconId}
+                          type='button'
+                          title={iconId}
+                          disabled={loading}
+                          className='p-1 rounded hover:bg-accent flex items-center justify-center'
+                          onClick={() => handleIconSelect(iconId)}>
+                          <img
+                            src={src}
+                            alt={iconId}
+                            className='w-6 h-6 dark:invert'
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
 
             <div className='relative'>
               <div className='absolute inset-0 flex items-center'>
