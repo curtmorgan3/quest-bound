@@ -323,7 +323,7 @@ export const onboardingTutorial: Tutorial = [
         selector: { selector: '[data-testid="nav-scripts"]', shouldAdvanceOnClick: true },
       },
       {
-        description: 'Click Create Script to create a script.',
+        description: 'Click New Script to create a script.',
         selector: {
           selector: '[data-testid="scripts-new-script-link"]',
           shouldAdvanceOnClick: true,
@@ -331,7 +331,7 @@ export const onboardingTutorial: Tutorial = [
       },
       {
         description:
-          'Enter the name "take_damage", set Type to "Action", then open the Action dropdown and assign it to "Take Damage".',
+          'On the Context tab, enter the name "take_damage", set Type to "Action", then open the Action dropdown and assign it to "Take Damage".',
         selector: {
           selector:
             '#script-name, [data-testid="script-editor-type"], [data-testid="script-editor-action-lookup"]',
@@ -348,21 +348,7 @@ export const onboardingTutorial: Tutorial = [
     Owner.Attribute('Health').subtract(10)`,
       },
       {
-        description: 'Click Save.',
-        selector: {
-          selector: '[data-testid="script-editor-save"]',
-          shouldAdvanceOnClick: true,
-        },
-      },
-      {
-        description: 'Go back to the Scripts list.',
-        selector: {
-          selector: '[data-testid="nav-scripts"]',
-          shouldAdvanceOnClick: true,
-        },
-      },
-      {
-        description: 'Click Create Script Script again.',
+        description: 'Click New Script.',
         selector: {
           selector: '[data-testid="scripts-new-script-link"]',
           shouldAdvanceOnClick: true,
@@ -381,13 +367,6 @@ export const onboardingTutorial: Tutorial = [
         description: 'Clear the editor, copy paste the following QBScript code below.',
         code: `on_consume():
     Owner.Attribute('Health').add(10)`,
-      },
-      {
-        description: 'Click Save.',
-        selector: {
-          selector: '[data-testid="script-editor-save"]',
-          shouldAdvanceOnClick: true,
-        },
       },
     ],
   },
