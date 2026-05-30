@@ -1,25 +1,21 @@
 import { useAssets } from '@/lib/compass-api';
 import { AssetLookup } from '../api-components';
-import { ImagePlus, Save, Trash } from 'lucide-react';
+import { ArrowLeft, ImagePlus, Trash } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { RulesetColorPicker, type RulesetColorPickerValue } from './ruleset-color-picker';
 
-/**
- * Resizes an image file to fit within maxWidth×maxHeight using the same scaling
- * logic as loadTilemapAssetDimensions (integer scale divisor, aspect ratio preserved).
- * Returns a new File with the same name and type, or the original file if no resize needed.
- */
 async function resizeImageFile(file: File, maxWidth: number, maxHeight: number): Promise<File> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -109,6 +105,8 @@ export const ImageUpload = ({
   const [iconQuery, setIconQuery] = useState('');
   const [iconResults, setIconResults] = useState<string[]>([]);
   const [iconSearching, setIconSearching] = useState(false);
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [iconColor, setIconColor] = useState('#888888');
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -182,17 +180,30 @@ export const ImageUpload = ({
     return () => clearTimeout(timer);
   }, [iconQuery]);
 
-  const handleIconSelect = async (iconId: string) => {
-    const [prefix, name] = iconId.split(':');
-    const iconUrl = `https://api.iconify.design/${prefix}/${name}.svg`;
+  const handleIconColorChange = (value: RulesetColorPickerValue) => {
+    if (typeof value === 'string') return;
+    const hex =
+      '#' +
+      [value.r, value.g, value.b]
+        .map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0'))
+        .join('');
+    setIconColor(hex);
+  };
+
+  const handleIconSave = async () => {
+    if (!selectedIcon) return;
+    const [prefix, name] = selectedIcon.split(':');
+    const iconUrl = `https://api.iconify.design/${prefix}/${name}.svg?color=${encodeURIComponent(iconColor)}`;
     setLoading(true);
     try {
       const assetId = await createUrlAsset(iconUrl, {
-        filename: iconId,
+        filename: selectedIcon,
         rulesetId: rulesetId ?? null,
         worldId: worldId ?? null,
       });
       onUpload?.(assetId);
+      setSelectedIcon(null);
+      setIconColor('#888888');
       setIconQuery('');
       setIconResults([]);
       setDialogOpen(false);
@@ -212,6 +223,8 @@ export const ImageUpload = ({
     setUrlNameInput('');
     setIconQuery('');
     setIconResults([]);
+    setSelectedIcon(null);
+    setIconColor('#888888');
     setDialogOpen(true);
   };
 
@@ -219,18 +232,37 @@ export const ImageUpload = ({
     document.getElementById(`image-upload-${id}`)?.click();
   };
 
+  const showChooseTab = !hideSelectAsset && rulesetId != null && rulesetId !== '';
+  const defaultTab = showChooseTab ? 'choose' : 'upload';
+
+  const currentImagePreview = image ? (
+    <div className='flex items-center gap-3 p-2 rounded-lg bg-muted'>
+      <img src={image} alt={alt} className='h-14 w-14 rounded-md object-cover flex-shrink-0' />
+      {onRemove && (
+        <Button
+          type='button'
+          variant='ghost'
+          size='icon'
+          onClick={onRemove}
+          disabled={loading}>
+          <Trash className='size-4' color='#9C3A28' />
+        </Button>
+      )}
+    </div>
+  ) : null;
+
   return (
     <>
       {trigger ? (
         trigger({ openDialog: handleClick })
       ) : image ? (
         <div
-          className={`relative flex gap-2`}
+          className='relative flex gap-2'
           style={{ height, width }}
           onPointerEnter={() => setHovering(true)}
           onPointerLeave={() => setHovering(false)}>
           <img
-            className={` object-cover rounded-lg cursor-pointer`}
+            className='object-cover rounded-lg cursor-pointer'
             style={{ height, width }}
             src={image}
             alt={alt}
@@ -253,7 +285,7 @@ export const ImageUpload = ({
         </div>
       ) : (
         <div
-          className={` bg-muted flex items-center justify-center rounded-lg text-3xl cursor-pointer`}
+          className='bg-muted flex items-center justify-center rounded-lg cursor-pointer'
           style={{ height, width }}
           onClick={handleClick}>
           <span className='text-xs text-muted-foreground'>
@@ -273,51 +305,65 @@ export const ImageUpload = ({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>Add Image</DialogTitle>
-            <DialogDescription>
-              Choose an existing asset, enter an image URL, or select a file from your device.
-            </DialogDescription>
+            <DialogTitle>Image</DialogTitle>
+            <DialogDescription>Choose how to add an image.</DialogDescription>
           </DialogHeader>
-          <div className='flex flex-col gap-4 py-2'>
-            {!hideSelectAsset && rulesetId != null && rulesetId !== '' && (
-              <AssetLookup
-                rulesetId={rulesetId}
-                placeholder='Search existing assets...'
-                label='Existing asset'
-                onSelect={(asset) => {
-                  onUpload?.(asset.id);
-                  setDialogOpen(false);
-                }}
-              />
+
+          <Tabs defaultValue={defaultTab}>
+            <TabsList className={`grid w-full ${showChooseTab ? 'grid-cols-4' : 'grid-cols-3'}`}>
+              {showChooseTab && <TabsTrigger value='choose'>Choose</TabsTrigger>}
+              <TabsTrigger value='upload'>Upload</TabsTrigger>
+              <TabsTrigger value='url'>URL</TabsTrigger>
+              <TabsTrigger value='icon'>Icon</TabsTrigger>
+            </TabsList>
+
+            {showChooseTab && (
+              <TabsContent value='choose' className='flex flex-col gap-4'>
+                {currentImagePreview}
+                <AssetLookup
+                  rulesetId={rulesetId!}
+                  placeholder='Search existing assets...'
+                  label='Existing asset'
+                  onSelect={(asset) => {
+                    onUpload?.(asset.id);
+                    setDialogOpen(false);
+                  }}
+                />
+              </TabsContent>
             )}
-            {!hideSelectAsset && rulesetId != null && rulesetId !== '' && (
-              <div className='relative'>
-                <div className='absolute inset-0 flex items-center'>
-                  <span className='w-full border-t' />
-                </div>
-                <div className='relative flex justify-center text-muted-foreground text-xs uppercase'>
-                  or add new
-                </div>
+
+            <TabsContent value='upload' className='flex flex-col gap-4'>
+              {currentImagePreview}
+              <Button
+                type='button'
+                variant='outline'
+                onClick={triggerFileInput}
+                disabled={loading}
+                className='w-full'>
+                <ImagePlus className='size-4 mr-2' />
+                {loading ? 'Uploading...' : 'Select file'}
+              </Button>
+            </TabsContent>
+
+            <TabsContent value='url' className='flex flex-col gap-4'>
+              {currentImagePreview}
+              <div className='flex flex-col gap-2'>
+                <Label htmlFor={`url-name-${id}`}>
+                  Name <span className='text-destructive'>*</span>
+                </Label>
+                <Input
+                  id={`url-name-${id}`}
+                  type='text'
+                  placeholder='e.g. cover.png'
+                  value={urlNameInput}
+                  onChange={(e) => {
+                    setUrlNameInput(e.target.value);
+                    setUrlError(null);
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                />
               </div>
-            )}
-            <div className='flex flex-col gap-2'>
-              <Label htmlFor={`url-name-${id}`}>
-                Name <span className='text-destructive'>*</span>
-              </Label>
-              <Input
-                id={`url-name-${id}`}
-                type='text'
-                placeholder='e.g. cover.png'
-                value={urlNameInput}
-                onChange={(e) => {
-                  setUrlNameInput(e.target.value);
-                  setUrlError(null);
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
-              />
-            </div>
-            <div className='flex gap-2 items-end'>
-              <div className='flex flex-col gap-2 flex-1'>
+              <div className='flex flex-col gap-2'>
                 <Label htmlFor={`url-input-${id}`}>Image URL</Label>
                 <Input
                   id={`url-input-${id}`}
@@ -332,85 +378,93 @@ export const ImageUpload = ({
                   }}
                   onKeyDown={(e) => {
                     e.stopPropagation();
-                    e.key === 'Enter' && handleUrlSubmit();
+                    if (e.key === 'Enter') handleUrlSubmit();
                   }}
                 />
               </div>
+              {urlError && <p className='text-destructive text-sm'>{urlError}</p>}
               <Button
                 type='button'
-                className='w-[50px]'
-                variant='ghost'
                 onClick={handleUrlSubmit}
-                disabled={loading}>
-                <Save className='size-4 mr-2' />
+                disabled={loading || !urlInput.trim() || !urlNameInput.trim()}
+                className='w-full'>
+                Save
               </Button>
-            </div>
-            {urlError && <p className='text-destructive text-sm'>{urlError}</p>}
+            </TabsContent>
 
-            <div className='relative'>
-              <div className='absolute inset-0 flex items-center'>
-                <span className='w-full border-t' />
-              </div>
-              <div className='relative flex justify-center text-muted-foreground text-xs uppercase'>
-                or choose an icon
-              </div>
-            </div>
-            <div className='flex flex-col gap-2'>
-              <Input
-                type='text'
-                placeholder='Search icons (e.g. sword, shield, dragon)'
-                value={iconQuery}
-                onChange={(e) => setIconQuery(e.target.value)}
-              />
-              {iconSearching && (
-                <p className='text-xs text-muted-foreground'>Searching...</p>
-              )}
-              {iconResults.length > 0 && (
-                <ScrollArea className='h-40 rounded border'>
-                  <div className='grid grid-cols-8 gap-1 p-2'>
-                    {iconResults.map((iconId) => {
-                      const [prefix, name] = iconId.split(':');
-                      const src = `https://api.iconify.design/${prefix}/${name}.svg`;
-                      return (
-                        <button
-                          key={iconId}
-                          type='button'
-                          title={iconId}
-                          disabled={loading}
-                          className='p-1 rounded hover:bg-accent flex items-center justify-center'
-                          onClick={() => handleIconSelect(iconId)}>
-                          <img
-                            src={src}
-                            alt={iconId}
-                            className='w-6 h-6 dark:invert'
-                          />
-                        </button>
-                      );
-                    })}
+            <TabsContent value='icon' className='flex flex-col gap-4'>
+              {currentImagePreview}
+              {selectedIcon ? (
+                <div className='flex flex-col gap-4'>
+                  <div className='flex items-center gap-3'>
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='icon'
+                      onClick={() => setSelectedIcon(null)}>
+                      <ArrowLeft className='size-4' />
+                    </Button>
+                    <img
+                      src={`https://api.iconify.design/${selectedIcon.split(':')[0]}/${selectedIcon.split(':')[1]}.svg?color=${encodeURIComponent(iconColor)}&width=48&height=48`}
+                      alt={selectedIcon}
+                      className='w-12 h-12'
+                    />
+                    <span className='text-sm text-muted-foreground truncate'>{selectedIcon}</span>
                   </div>
-                </ScrollArea>
+                  <div className='flex items-center gap-3'>
+                    <span className='text-sm'>Color</span>
+                    <RulesetColorPicker
+                      color={iconColor}
+                      onUpdate={handleIconColorChange}
+                      label='Icon color'
+                      disableAlpha
+                    />
+                  </div>
+                  {urlError && <p className='text-destructive text-sm'>{urlError}</p>}
+                  <Button
+                    type='button'
+                    onClick={handleIconSave}
+                    disabled={loading}
+                    className='w-full'>
+                    {loading ? 'Saving...' : 'Save icon'}
+                  </Button>
+                </div>
+              ) : (
+                <div className='flex flex-col gap-2'>
+                  <Input
+                    type='text'
+                    placeholder='Search icons (e.g. sword, shield, dragon)'
+                    value={iconQuery}
+                    onChange={(e) => setIconQuery(e.target.value)}
+                  />
+                  {iconSearching && (
+                    <p className='text-xs text-muted-foreground'>Searching...</p>
+                  )}
+                  {iconResults.length > 0 && (
+                    <ScrollArea className='h-48 rounded border'>
+                      <div className='grid grid-cols-8 gap-1 p-2'>
+                        {iconResults.map((iconId) => {
+                          const [prefix, name] = iconId.split(':');
+                          const src = `https://api.iconify.design/${prefix}/${name}.svg?color=%23888888`;
+                          return (
+                            <button
+                              key={iconId}
+                              type='button'
+                              title={iconId}
+                              disabled={loading}
+                              className='p-1 rounded hover:bg-accent flex items-center justify-center'
+                              onClick={() => setSelectedIcon(iconId)}>
+                              <img src={src} alt={iconId} className='w-6 h-6' />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
               )}
-            </div>
-
-            <div className='relative'>
-              <div className='absolute inset-0 flex items-center'>
-                <span className='w-full border-t' />
-              </div>
-              <div className='relative flex justify-center text-muted-foreground text-xs uppercase'>
-                or
-              </div>
-            </div>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={triggerFileInput}
-              disabled={loading}
-              className='w-full'>
-              <ImagePlus className='size-4 mr-2' />
-              Select file
-            </Button>
-          </div>
-          <DialogFooter />
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </>
