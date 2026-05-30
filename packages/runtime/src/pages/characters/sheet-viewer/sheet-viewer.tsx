@@ -59,8 +59,17 @@ export const SheetViewer = ({
   const { windows: rulesetWindowDefs } = useWindows();
   const [searchParams] = useSearchParams();
 
+  const validInitialPageId = useMemo(() => {
+    if (!initialCurrentPageId) return null;
+    // Pages not yet loaded — assume the stored ID is still valid to avoid a flash
+    if (sortedCharacterPages.length === 0) return initialCurrentPageId;
+    return sortedCharacterPages.some((p) => p.id === initialCurrentPageId)
+      ? initialCurrentPageId
+      : null;
+  }, [initialCurrentPageId, sortedCharacterPages]);
+
   const currentPageId =
-    searchParams.get('pageId') ?? initialCurrentPageId ?? sortedCharacterPages[0]?.id;
+    searchParams.get('pageId') ?? validInitialPageId ?? sortedCharacterPages[0]?.id;
 
   const sheetBottomBarRef = useRef<HTMLDivElement>(null);
   const [sheetFitBottomInsetPx, setSheetFitBottomInsetPx] = useState(0);
