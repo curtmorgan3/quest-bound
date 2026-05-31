@@ -1,6 +1,6 @@
 {
   "name": "@quest-bound/core-ui",
-  "version": "2.2.34",
+  "version": "2.2.35",
   "type": "module",
   "exports": {
     ".": {
@@ -24,10 +24,10 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
-    "@quest-bound/cloud": "2.2.34",
-    "@quest-bound/local-db": "2.2.34",
-    "@quest-bound/runtime": "2.2.34",
-    "@quest-bound/types": "2.2.34",
+    "@quest-bound/cloud": "2.2.35",
+    "@quest-bound/local-db": "2.2.35",
+    "@quest-bound/runtime": "2.2.35",
+    "@quest-bound/types": "2.2.35",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
