@@ -24,7 +24,7 @@ export function GameAuthGuard() {
     return (
       <SignInSignUpModal
         open
-        mode='sign-in-only'
+        mode='default'
         onSuccess={() => {}}
       />
     );

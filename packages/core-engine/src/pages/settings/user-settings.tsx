@@ -420,11 +420,13 @@ export const UserSettings = () => {
     }
   };
 
+  const isGameMode = import.meta.env.VITE_GAME_MODE === 'true';
+
   if (!currentUser) return null;
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className='w-full'>
-      <TabsList className={cn('w-full max-w-2xl grid grid-cols-2 sm:grid-cols-4')}>
+      <TabsList className={cn('w-full max-w-2xl grid grid-cols-2', isGameMode ? 'sm:grid-cols-3' : 'sm:grid-cols-4')}>
         <TabsTrigger value='profile' className='gap-2'>
           <User className='size-4' />
           Profile
@@ -437,10 +439,12 @@ export const UserSettings = () => {
           <Shield className='size-4' />
           Account
         </TabsTrigger>
-        <TabsTrigger value='organizations' className='gap-2'>
-          <Building2 className='size-4' />
-          Organization
-        </TabsTrigger>
+        {!isGameMode && (
+          <TabsTrigger value='organizations' className='gap-2'>
+            <Building2 className='size-4' />
+            Organization
+          </TabsTrigger>
+        )}
       </TabsList>
 
       <TabsContent value='profile' className='flex flex-col gap-4 mt-4'>
@@ -569,9 +573,11 @@ export const UserSettings = () => {
         </div>
       </TabsContent>
 
-      <TabsContent value='organizations' className='flex flex-col gap-4 mt-4'>
-        <UserOrganizationsTab />
-      </TabsContent>
+      {!isGameMode && (
+        <TabsContent value='organizations' className='flex flex-col gap-4 mt-4'>
+          <UserOrganizationsTab />
+        </TabsContent>
+      )}
 
       <TabsContent value='account' className='flex flex-col gap-4 mt-4'>
         <CloudAccountSettings />
