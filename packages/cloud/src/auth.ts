@@ -69,6 +69,14 @@ export function onAuthStateChange(callback: AuthChangeCallback): () => void {
   return () => subscription.unsubscribe();
 }
 
+export async function resetPassword(email: string): Promise<{ error: Error | null }> {
+  if (!cloudClient) {
+    return { error: new Error('Cloud is not configured') };
+  }
+  const { error } = await cloudClient.auth.resetPasswordForEmail(email);
+  return { error: error ?? null };
+}
+
 export async function updatePassword(newPassword: string): Promise<{ error: Error | null }> {
   if (!cloudClient) {
     return { error: new Error('Cloud is not configured') };

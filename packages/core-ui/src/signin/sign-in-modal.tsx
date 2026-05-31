@@ -4,7 +4,7 @@ import { Button, Input, Link } from '@/components';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { DISCORD_URL } from '@/constants';
-import { getSession, signIn, signUp } from '@/lib/cloud/auth';
+import { getSession, resetPassword, signIn, signUp } from '@/lib/cloud/auth';
 import { isCloudConfigured } from '@/lib/cloud/client';
 import { linkLocalUserToCloudAuth } from '@/lib/cloud/link-local-user-to-cloud-auth';
 import { useRegisterEmail, useUsers } from '@/lib/compass-api';
@@ -52,6 +52,11 @@ export function SignInSignUpModal({
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
   const [hasCloudSession, setHasCloudSession] = useState<boolean | null>(null);
   const [defaultAuthTab, setDefaultAuthTab] = useState<'sign-in' | 'sign-up'>('sign-up');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordError, setForgotPasswordError] = useState<string | null>(null);
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [forgotPasswordSubmitting, setForgotPasswordSubmitting] = useState(false);
 
   const needUser = !users?.length;
   const selectedUser = users?.length ? users[0] : null;
@@ -80,6 +85,10 @@ export function SignInSignUpModal({
   useEffect(() => {
     if (!open) {
       setDefaultAuthTab('sign-up');
+      setShowForgotPassword(false);
+      setForgotPasswordSent(false);
+      setForgotPasswordEmail('');
+      setForgotPasswordError(null);
     }
   }, [open]);
 
@@ -88,6 +97,33 @@ export function SignInSignUpModal({
       setUsernameValue(selectedUser.username);
     }
   }, [selectedUser?.id, mode]);
+
+  const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmed = forgotPasswordEmail.trim();
+    if (!trimmed) {
+      setForgotPasswordError('Email is required');
+      return;
+    }
+    if (!isValidEmail(trimmed)) {
+      setForgotPasswordError('Please enter a valid email address');
+      return;
+    }
+    setForgotPasswordSubmitting(true);
+    setForgotPasswordError(null);
+    try {
+      const { error } = await resetPassword(trimmed);
+      if (error) {
+        setForgotPasswordError(error.message);
+      } else {
+        setForgotPasswordSent(true);
+      }
+    } catch (e: unknown) {
+      setForgotPasswordError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setForgotPasswordSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (form?: HTMLFormElement | null) => {
     setSubmitting(true);
@@ -228,7 +264,69 @@ export function SignInSignUpModal({
           </video>
 
           <div className='flex w-full flex-col gap-4'>
-            {emailVerificationSent ? (
+            {showForgotPassword ? (
+              forgotPasswordSent ? (
+                <div className='flex flex-col items-center gap-3' data-testid='forgot-password-sent'>
+                  <p className='text-center text-sm text-muted-foreground'>
+                    Check your email for a password reset link.
+                  </p>
+                  <button
+                    type='button'
+                    className='text-xs text-muted-foreground underline hover:text-foreground'
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setForgotPasswordSent(false);
+                      setForgotPasswordEmail('');
+                    }}>
+                    Back to sign in
+                  </button>
+                </div>
+              ) : (
+                <form
+                  className='flex w-full flex-col gap-4'
+                  onSubmit={(e) => void handleForgotPassword(e)}
+                  data-testid='forgot-password-form'>
+                  <p className='text-center text-sm text-muted-foreground'>
+                    Enter your email and we'll send you a reset link.
+                  </p>
+                  <Input
+                    type='email'
+                    autoComplete='email'
+                    className='w-full'
+                    placeholder='Email'
+                    value={forgotPasswordEmail}
+                    onChange={(e) => {
+                      setForgotPasswordEmail(e.target.value);
+                      if (forgotPasswordError) setForgotPasswordError(null);
+                    }}
+                    aria-invalid={Boolean(forgotPasswordError)}
+                    data-testid='forgot-password-email-input'
+                  />
+                  {forgotPasswordError && (
+                    <p className='text-sm text-destructive' role='alert' data-testid='forgot-password-error'>
+                      {forgotPasswordError}
+                    </p>
+                  )}
+                  <Button
+                    type='submit'
+                    loading={forgotPasswordSubmitting}
+                    disabled={!forgotPasswordEmail.trim() || forgotPasswordSubmitting}
+                    className='w-full'
+                    data-testid='forgot-password-submit'>
+                    Send reset link
+                  </Button>
+                  <button
+                    type='button'
+                    className='self-center text-xs text-muted-foreground underline hover:text-foreground'
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setForgotPasswordError(null);
+                    }}>
+                    Back to sign in
+                  </button>
+                </form>
+              )
+            ) : emailVerificationSent ? (
               <p
                 className='text-center text-sm text-muted-foreground'
                 data-testid='email-verification-message'>
@@ -314,6 +412,19 @@ export function SignInSignUpModal({
                     autoComplete={isSignInForm ? 'current-password' : 'new-password'}
                     data-testid='password-input'
                   />
+                )}
+                {isSignInForm && isCloudConfigured && (
+                  <button
+                    type='button'
+                    className='self-end text-xs text-muted-foreground underline hover:text-foreground'
+                    onClick={() => {
+                      setShowForgotPassword(true);
+                      setForgotPasswordEmail(email ?? '');
+                      setSubmitError(null);
+                    }}
+                    data-testid='forgot-password-link'>
+                    Forgot password?
+                  </button>
                 )}
                 {submitError && (
                   <p className='text-sm text-destructive' role='alert' data-testid='submit-error'>
