@@ -6,6 +6,9 @@ import { Map, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
+const isGameMode = import.meta.env.VITE_GAME_MODE === 'true';
+const editMode = import.meta.env.VITE_EDIT_MODE !== 'false';
+const showModifyLink = !isQbBundler && (!isGameMode || editMode);
 
 export function RulesetLanding() {
   const { activeRuleset } = useActiveRuleset();
@@ -44,7 +47,7 @@ export function RulesetLanding() {
             <span>Made with Quest Bound</span>
             <LogoIcon style={{ width: 24, height: 24 }} />
           </div>
-          {!isQbBundler ? (
+          {showModifyLink ? (
             <Link
               to={`/rulesets/${activeRuleset.id}`}
               className='text-xs text-muted-foreground hover:text-foreground transition-colors'>

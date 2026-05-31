@@ -8,6 +8,12 @@ interface ImportMetaEnv {
   readonly VITE_PLAUSIBLE_DOMAIN?: string;
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
+  /** Set to `"true"` in game mode builds (single-ruleset deployment). */
+  readonly VITE_GAME_MODE?: string;
+  /** UUID of the `games` table row for this deployment. Used to check game authorization. */
+  readonly VITE_GAME_ID?: string;
+  /** Set to `"false"` to restrict game mode to landing, /characters, and /campaigns only. Defaults to true. */
+  readonly VITE_EDIT_MODE?: string;
 }
 
 declare namespace Cypress {

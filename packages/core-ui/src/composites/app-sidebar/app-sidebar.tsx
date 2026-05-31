@@ -70,6 +70,7 @@ function docsPageFromRoute(path: string): string {
 
 /** qb-bundler static build: sidebar “Home” goes to `/` → ruleset landing (see qb-bundler `BundledApp`). */
 const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
+const isGameMode = import.meta.env.VITE_GAME_MODE === 'true';
 
 export function AppSidebar() {
   const { currentUser } = useUsers();
@@ -129,6 +130,7 @@ export function AppSidebar() {
   const [hasCloudBackup, setHasCloudBackup] = useState(false);
 
   const showCloudSync =
+    !isGameMode &&
     isCloudConfigured &&
     isAuthenticated &&
     rulesetId &&
@@ -220,7 +222,7 @@ export function AppSidebar() {
         <SidebarContent>{sidebarContent}</SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            {showFooterHomeOrOpen && (
+            {showFooterHomeOrOpen && !isGameMode && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link to={isQbBundler ? '/' : '/rulesets'} data-testid='nav-home'>

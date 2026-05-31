@@ -15,6 +15,7 @@ import { RulesetSettings } from './ruleset-settings';
 import { UserSettings } from './user-settings';
 
 const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
+const isGameMode = import.meta.env.VITE_GAME_MODE === 'true';
 
 export const Settings = () => {
   const { rulesetId, campaignId, characterId } = useParams();
@@ -26,7 +27,7 @@ export const Settings = () => {
   const isOnCampaignRoute = Boolean(campaignId && campaignId !== 'undefined');
 
   const showRulesetSettings =
-    !isQbBundler && isOnRulesetRoute && Boolean(activeRuleset);
+    !isQbBundler && !isGameMode && isOnRulesetRoute && Boolean(activeRuleset);
 
   const [page, setPage] = useState<string>('user');
   const prevParamsRef = useRef({ rulesetId, campaignId, characterId });

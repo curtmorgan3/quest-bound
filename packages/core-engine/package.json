@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && cp ../../robots.txt ./dist/robots.txt",
+    "build:game": "cp game-assets/ruleset.zip public/game-ruleset.zip && vite build --mode game && cp ../../robots.txt ./dist/robots.txt",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json"
   },

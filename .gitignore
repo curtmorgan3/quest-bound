@@ -18,6 +18,10 @@ dist
 dist-ssr
 *.local
 
+# Game mode build assets (drop ruleset.zip here before running build:game)
+packages/core-engine/game-assets/ruleset.zip
+packages/core-engine/public/game-ruleset.zip
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
