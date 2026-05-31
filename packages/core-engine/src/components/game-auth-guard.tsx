@@ -39,7 +39,15 @@ export function GameAuthGuard() {
           <DialogHeader>
             <DialogTitle>Access Required</DialogTitle>
             <DialogDescription>
-              You don't have access to this ruleset app. Contact the administrator to request access.
+              Access this game by joining the{' '}
+              <a
+                href='https://www.patreon.com/cw/QuestBoundEngine/membership'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='text-primary underline underline-offset-4 hover:text-primary/90'>
+                Quest Bound Patreon
+              </a>
+              .
             </DialogDescription>
           </DialogHeader>
         </DialogContent>

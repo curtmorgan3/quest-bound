@@ -12,6 +12,8 @@ interface ImportMetaEnv {
   readonly VITE_GAME_MODE?: string;
   /** UUID of the `games` table row for this deployment. Used to check game authorization. */
   readonly VITE_GAME_ID?: string;
+  /** Subdomain slug for this deployment, e.g. `dnd` → `dnd.questbound.com`. */
+  readonly VITE_GAME_SLUG?: string;
   /** Set to `"false"` to restrict game mode to landing, /characters, and /campaigns only. Defaults to true. */
   readonly VITE_EDIT_MODE?: string;
 }

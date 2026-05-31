@@ -16,6 +16,12 @@ export const viteConfig = defineConfig({
   envDir: path.resolve(__dirname, '../..'),
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
+    ...(process.env.VITE_GAME_MODE === 'true' && {
+      'import.meta.env.VITE_GAME_MODE': JSON.stringify('true'),
+      'import.meta.env.VITE_GAME_ID': JSON.stringify(process.env.VITE_GAME_ID ?? ''),
+      'import.meta.env.VITE_GAME_SLUG': JSON.stringify(process.env.VITE_GAME_SLUG ?? ''),
+      'import.meta.env.VITE_EDIT_MODE': JSON.stringify(process.env.VITE_EDIT_MODE ?? 'true'),
+    }),
   },
   plugins: [
     react(),

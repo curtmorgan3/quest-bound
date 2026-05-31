@@ -32,3 +32,6 @@ packages/core-engine/public/game-ruleset.zip
 *.njsproj
 *.sln
 *.sw?
+
+# Local Netlify folder
+.netlify
