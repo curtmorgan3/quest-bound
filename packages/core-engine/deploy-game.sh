@@ -28,6 +28,13 @@ if [ -z "$VITE_GAME_ID" ]; then
   exit 1
 fi
 
+# Optional PWA identity vars (used for the installed app name/icon/branding)
+# VITE_GAME_NAME        — full app name shown on the home screen (default: "Quest Bound")
+# VITE_GAME_SHORT_NAME  — short name for tight spaces (default: VITE_GAME_NAME)
+# VITE_GAME_DESCRIPTION — description shown in app stores / install prompts
+# VITE_GAME_THEME_COLOR — hex color for the browser chrome when installed (default: "#000000")
+# game-assets/icon.png  — PNG icon (512×512 recommended) used as the installed app icon
+
 # Check Netlify CLI
 if ! command -v netlify &>/dev/null; then
   echo "Error: netlify CLI not found. Install it with: npm install -g netlify-cli"

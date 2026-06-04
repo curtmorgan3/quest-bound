@@ -18,6 +18,26 @@ export const viteConfig = defineConfig(({ mode }) => {
   const env = loadEnv(mode, envDir, '');
   const isGameMode = env.VITE_GAME_MODE === 'true';
 
+  const gameName = isGameMode ? (env.VITE_GAME_NAME || 'Quest Bound') : 'Quest Bound';
+  const gameShortName = isGameMode ? (env.VITE_GAME_SHORT_NAME || gameName) : 'Quest Bound';
+  const gameDescription = isGameMode
+    ? (env.VITE_GAME_DESCRIPTION || 'A tabletop game')
+    : 'A quest management application';
+  const gameThemeColor = isGameMode ? (env.VITE_GAME_THEME_COLOR || '#000000') : '#000000';
+  /** True when the caller placed game-assets/icon.png and the build script copied it here. */
+  const hasGameIcon =
+    isGameMode && fs.existsSync(path.resolve(__dirname, 'public/icons/game-icon.png'));
+
+  const pwaIcons = hasGameIcon
+    ? [
+        { src: '/icons/game-icon.png', sizes: '192x192', type: 'image/png', purpose: 'maskable any' },
+        { src: '/icons/game-icon.png', sizes: '512x512', type: 'image/png', purpose: 'maskable any' },
+      ]
+    : [
+        { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      ];
+
   return {
     /** Monorepo: keep a single `.env` at the repo root; default would only load `packages/core-engine/.env`. */
     envDir,
@@ -28,39 +48,77 @@ export const viteConfig = defineConfig(({ mode }) => {
         'import.meta.env.VITE_GAME_ID': JSON.stringify(env.VITE_GAME_ID ?? ''),
         'import.meta.env.VITE_GAME_SLUG': JSON.stringify(env.VITE_GAME_SLUG ?? ''),
         'import.meta.env.VITE_EDIT_MODE': JSON.stringify(env.VITE_EDIT_MODE ?? 'true'),
+        'import.meta.env.VITE_GAME_NAME': JSON.stringify(gameName),
+        'import.meta.env.VITE_GAME_SHORT_NAME': JSON.stringify(gameShortName),
+        'import.meta.env.VITE_GAME_DESCRIPTION': JSON.stringify(gameDescription),
+        'import.meta.env.VITE_GAME_THEME_COLOR': JSON.stringify(gameThemeColor),
       }),
     },
     plugins: [
       react(),
       tailwindcss(),
       tsconfigPaths(),
+      ...(isGameMode
+        ? [
+            {
+              name: 'game-mode-html',
+              transformIndexHtml(html: string): string {
+                let result = html
+                  .replace(/<title>.*?<\/title>/, `<title>${gameName}</title>`)
+                  .replace(
+                    /(<meta name="apple-mobile-web-app-title" content=")([^"]*)(")/,
+                    `$1${gameName}$3`,
+                  )
+                  .replace(
+                    /(<meta name="theme-color" content=")([^"]*)(")/,
+                    `$1${gameThemeColor}$3`,
+                  )
+                  .replace(
+                    /(<meta name="description" content=")([^"]*)(")/,
+                    `$1${gameDescription}$3`,
+                  )
+                  // Remove the static manifest link — VitePWA injects its own manifest.webmanifest
+                  .replace(/<link rel="manifest" href="\/manifest\.json" \/>/, '');
+                if (hasGameIcon) {
+                  result = result
+                    .replace(
+                      /(<link rel="apple-touch-icon" href=")([^"]*)(")/,
+                      `$1/icons/game-icon.png$3`,
+                    )
+                    .replace(
+                      /<link rel="icon" type="image\/svg\+xml" href="[^"]*"/,
+                      '<link rel="icon" type="image/png" href="/icons/game-icon.png"',
+                    )
+                    .replace(
+                      /<link rel="icon" type="image\/png" sizes="192x192" href="[^"]*"/,
+                      '<link rel="icon" type="image/png" sizes="192x192" href="/icons/game-icon.png"',
+                    )
+                    .replace(
+                      /<link rel="icon" type="image\/png" sizes="512x512" href="[^"]*"/,
+                      '<link rel="icon" type="image/png" sizes="512x512" href="/icons/game-icon.png"',
+                    );
+                }
+                return result;
+              },
+            },
+          ]
+        : []),
       VitePWA({
         /** Custom registration in `PwaUpdateProvider` (workbox-window). Do not inject `registerSW.js` — it only calls `register()` on `load` with no update listeners and can prevent the prompt toast from firing. */
         injectRegister: false,
         registerType: 'prompt',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
-          name: 'Quest Bound',
-          short_name: 'Quest Bound',
-          description: 'A quest management application',
-          theme_color: '#000000',
+          name: gameName,
+          short_name: gameShortName,
+          description: gameDescription,
+          theme_color: gameThemeColor,
           background_color: '#000000',
           display: 'standalone',
           orientation: 'portrait-primary',
           scope: '/',
           start_url: '/',
-          icons: [
-            {
-              src: '/icons/icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-            },
-            {
-              src: '/icons/icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-            },
-          ],
+          icons: pwaIcons,
         },
         workbox: {
           /** Include font extensions so @font-face assets (e.g. CygnitoMonoPro) are precached for offline PWA. */
