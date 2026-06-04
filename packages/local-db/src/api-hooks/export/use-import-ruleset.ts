@@ -84,6 +84,20 @@ const BULK_CHUNK_SIZE = 1000;
 /** Smaller chunk for large records (assets, fonts, documents with embedded data). */
 const BULK_CHUNK_SIZE_LARGE = 100;
 
+async function bulkPutInChunks<T>(
+  table: { bulkPut(items: readonly T[] | T[], ...args: unknown[]): Promise<unknown> },
+  items: T[],
+  chunkSize: number = BULK_CHUNK_SIZE,
+): Promise<void> {
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const chunk = items.slice(i, i + chunkSize);
+    await table.bulkPut(chunk);
+    if (i + chunkSize < items.length) {
+      await new Promise<void>((r) => setTimeout(r, 0));
+    }
+  }
+}
+
 /**
  * Write many records in chunks to avoid long-running IndexedDB transactions and main-thread blocking.
  * Yields to the event loop between chunks so the browser stays responsive and the DB connection doesn't lock.
@@ -147,6 +161,9 @@ export interface ImportRulesetOptions {
   contentOnlyIntoRulesetId?: string;
   /** When true, delete the existing ruleset and replace it unconditionally. Used for cloud pull. */
   forceReplace?: boolean;
+  /** When true and the uploaded bundle is a newer version, upsert schema entities (attributes, items,
+   * windows, etc.) without touching player data (characters, inventories, etc.). Used for game-mode updates. */
+  mergeIfNewer?: boolean;
 }
 
 export interface ImportRulesetResult {
@@ -897,6 +914,8 @@ export const useImportRuleset = () => {
         ...landingCta,
       };
 
+      let isMerge = false;
+
       // Content-only import: fill an existing ruleset (e.g. temp ruleset for add-module-from-zip)
       if (options?.contentOnlyIntoRulesetId) {
         newRulesetId = options.contentOnlyIntoRulesetId;
@@ -912,7 +931,25 @@ export const useImportRuleset = () => {
           if (options?.forceReplace) {
             await deleteRulesetAndRelatedData(newRulesetId);
           } else if (existingRuleset.version === newRuleset.version) {
-            // Same id and version: either request duplicate-as-new confirmation or perform duplication
+            // Same id and version
+            if (options?.mergeIfNewer) {
+              return {
+                success: true,
+                message: `Ruleset "${existingRuleset.title}" is already up to date (v${existingRuleset.version}).`,
+                importedRuleset: existingRuleset,
+                importedCounts: {
+                  attributes: 0, actions: 0, items: 0, charts: 0, characters: 0, windows: 0,
+                  components: 0, composites: 0, compositeVariants: 0, assets: 0, fonts: 0,
+                  documents: 0, archetypes: 0, customProperties: 0, archetypeCustomProperties: 0,
+                  itemCustomProperties: 0, characterAttributes: 0, inventories: 0,
+                  characterWindows: 0, characterPages: 0, rulesetWindows: 0, inventoryItems: 0,
+                  scripts: 0, campaigns: 0, campaignScenes: 0, campaignCharacters: 0,
+                  campaignEvents: 0, sceneTurnCallbacks: 0,
+                },
+                errors: [],
+              };
+            }
+            // Either request duplicate-as-new confirmation or perform duplication
             if (options?.duplicateAsNew) {
               const duplicateTitle = options.duplicateTitle?.trim() || `${newRuleset.title} (copy)`;
               const duplicateVersion = options.duplicateVersion?.trim() || newRuleset.version;
@@ -983,8 +1020,10 @@ export const useImportRuleset = () => {
               errors: ['Duplicate ruleset: same id and version as an existing ruleset'],
             };
           } else if (compareVersion(newRuleset.version, existingRuleset.version) > 0) {
-            // Uploaded version is higher: prompt to replace unless already confirmed
-            if (!options?.replaceIfNewer) {
+            if (options?.mergeIfNewer) {
+              isMerge = true;
+              // Fall through to content import — schema entities will be upserted, player data preserved
+            } else if (!options?.replaceIfNewer) {
               return {
                 success: false,
                 message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id. The uploaded file is a newer version (v${newRuleset.version}). Replacing will remove the existing ruleset and all its data, and replace it with the uploaded version.`,
@@ -1023,10 +1062,28 @@ export const useImportRuleset = () => {
                 },
                 errors: [],
               };
+            } else {
+              await deleteRulesetAndRelatedData(newRulesetId);
             }
-            await deleteRulesetAndRelatedData(newRulesetId);
           } else {
-            // Uploaded version is lower or equal (same already handled above): reject
+            // Uploaded version is lower or equal (same already handled above)
+            if (options?.mergeIfNewer) {
+              return {
+                success: true,
+                message: `Ruleset "${existingRuleset.title}" is already up to date (v${existingRuleset.version}).`,
+                importedRuleset: existingRuleset,
+                importedCounts: {
+                  attributes: 0, actions: 0, items: 0, charts: 0, characters: 0, windows: 0,
+                  components: 0, composites: 0, compositeVariants: 0, assets: 0, fonts: 0,
+                  documents: 0, archetypes: 0, customProperties: 0, archetypeCustomProperties: 0,
+                  itemCustomProperties: 0, characterAttributes: 0, inventories: 0,
+                  characterWindows: 0, characterPages: 0, rulesetWindows: 0, inventoryItems: 0,
+                  scripts: 0, campaigns: 0, campaignScenes: 0, campaignCharacters: 0,
+                  campaignEvents: 0, sceneTurnCallbacks: 0,
+                },
+                errors: [],
+              };
+            }
             return {
               success: false,
               message: `A ruleset "${existingRuleset.title}" (v${existingRuleset.version}) already exists with the same id. The uploaded file is an older or same version (v${newRuleset.version}). Import aborted.`,
@@ -1067,6 +1124,15 @@ export const useImportRuleset = () => {
         }
       }
 
+      const bulkWrite = <T>(
+        table: {
+          bulkAdd(items: readonly T[] | T[], ...args: unknown[]): Promise<unknown>;
+          bulkPut(items: readonly T[] | T[], ...args: unknown[]): Promise<unknown>;
+        },
+        items: T[],
+        chunkSize?: number,
+      ) => (isMerge ? bulkPutInChunks(table, items, chunkSize) : bulkAddInChunks(table, items, chunkSize));
+
       // Import content files
       const importedCounts = {
         attributes: 0,
@@ -1106,7 +1172,7 @@ export const useImportRuleset = () => {
 
       // Import characterAttributes
       const characterAttributesFile = getZipFile('application data/characterAttributes.json');
-      if (characterAttributesFile) {
+      if (!isMerge && characterAttributesFile) {
         try {
           const characterAttributesText = await characterAttributesFile.async('text');
           const characterAttributes: CharacterAttribute[] = JSON.parse(characterAttributesText);
@@ -1181,7 +1247,7 @@ export const useImportRuleset = () => {
               }
               toAdd.push(rec);
             }
-            await bulkAddInChunks(db.attributes, toAdd);
+            await bulkWrite(db.attributes, toAdd);
             importedCounts.attributes = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1239,7 +1305,7 @@ export const useImportRuleset = () => {
               }
               toAdd.push(rec);
             }
-            await bulkAddInChunks(db.actions, toAdd);
+            await bulkWrite(db.actions, toAdd);
             importedCounts.actions = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1302,7 +1368,7 @@ export const useImportRuleset = () => {
               }
               toAdd.push(rec);
             }
-            await bulkAddInChunks(db.items, toAdd);
+            await bulkWrite(db.items, toAdd);
             importedCounts.items = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1379,7 +1445,7 @@ export const useImportRuleset = () => {
               }
               toAdd.push(newChart);
             }
-            await bulkAddInChunks(db.charts, toAdd);
+            await bulkWrite(db.charts, toAdd);
             importedCounts.charts = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1406,7 +1472,7 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             }));
-            await bulkAddInChunks(db.customProperties, toAdd);
+            await bulkWrite(db.customProperties, toAdd);
             importedCounts.customProperties = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1433,7 +1499,7 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             }));
-            await bulkAddInChunks(db.itemCustomProperties, toAdd);
+            await bulkWrite(db.itemCustomProperties, toAdd);
             importedCounts.itemCustomProperties = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1462,7 +1528,7 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             }));
-            await bulkAddInChunks(db.windows, toAdd);
+            await bulkWrite(db.windows, toAdd);
             importedCounts.windows = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1490,7 +1556,7 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             }));
-            await bulkAddInChunks(db.components, toAdd);
+            await bulkWrite(db.components, toAdd);
             importedCounts.components = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1517,7 +1583,7 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             }));
-            await bulkAddInChunks(db.composites, toAdd);
+            await bulkWrite(db.composites, toAdd);
             importedCounts.composites = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1542,7 +1608,7 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             }));
-            await bulkAddInChunks(db.compositeVariants, toAdd);
+            await bulkWrite(db.compositeVariants, toAdd);
             importedCounts.compositeVariants = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1618,7 +1684,7 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             }));
-            await bulkAddInChunks(db.assets, toAdd, BULK_CHUNK_SIZE_LARGE);
+            await bulkWrite(db.assets, toAdd, BULK_CHUNK_SIZE_LARGE);
             importedCounts.assets = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1677,7 +1743,7 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             }));
-            await bulkAddInChunks(db.fonts, toAdd, BULK_CHUNK_SIZE_LARGE);
+            await bulkWrite(db.fonts, toAdd, BULK_CHUNK_SIZE_LARGE);
             importedCounts.fonts = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1749,7 +1815,7 @@ export const useImportRuleset = () => {
               }
               toAdd.push(newDocument);
             }
-            await bulkAddInChunks(db.documents, toAdd, BULK_CHUNK_SIZE_LARGE);
+            await bulkWrite(db.documents, toAdd, BULK_CHUNK_SIZE_LARGE);
             importedCounts.documents = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -1763,7 +1829,7 @@ export const useImportRuleset = () => {
 
       // Import characterInventories
       const inventories = getZipFile('application data/inventories.json');
-      if (inventories) {
+      if (!isMerge && inventories) {
         try {
           const inventoriesText = await inventories.async('text');
           const characterInventories: Inventory[] = JSON.parse(inventoriesText);
@@ -1789,7 +1855,7 @@ export const useImportRuleset = () => {
 
       // Import characterWindows
       const characterWindowsFile = getZipFile('application data/characterWindows.json');
-      if (characterWindowsFile) {
+      if (!isMerge && characterWindowsFile) {
         try {
           const characterWindowsText = await characterWindowsFile.async('text');
           const characterWindows: CharacterWindow[] = JSON.parse(characterWindowsText);
@@ -1828,7 +1894,7 @@ export const useImportRuleset = () => {
               createdAt: now,
               updatedAt: now,
             }));
-            await bulkAddInChunks(db.pages, toAdd);
+            await bulkWrite(db.pages, toAdd);
           } else {
             allErrors.push(...validation.errors);
           }
@@ -1878,6 +1944,9 @@ export const useImportRuleset = () => {
                 updatedAt: now,
               };
             });
+            if (isMerge) {
+              await db.rulesetWindows.where('rulesetId').equals(newRulesetId).delete();
+            }
             await bulkAddInChunks(db.rulesetWindows, toAdd);
             importedCounts.rulesetWindows = toAdd.length;
           } else {
@@ -1892,7 +1961,7 @@ export const useImportRuleset = () => {
 
       // Import characterPages (full content; map characterId to new id)
       const characterPagesFile = getZipFile('application data/characterPages.json');
-      if (characterPagesFile) {
+      if (!isMerge && characterPagesFile) {
         try {
           const characterPagesText = await characterPagesFile.async('text');
           const characterPagesParsed = JSON.parse(characterPagesText) as unknown;
@@ -1933,7 +2002,7 @@ export const useImportRuleset = () => {
 
       // Import inventoryItems (must be after inventories since they reference inventoryId)
       const inventoryItemsFile = getZipFile('application data/inventoryItems.json');
-      if (inventoryItemsFile) {
+      if (!isMerge && inventoryItemsFile) {
         try {
           const inventoryItemsText = await inventoryItemsFile.async('text');
           const inventoryItems: InventoryItem[] = JSON.parse(inventoryItemsText);
@@ -1961,7 +2030,7 @@ export const useImportRuleset = () => {
 
       // Import characters
       const charactersFile = getZipFile('application data/characters.json');
-      if (charactersFile) {
+      if (!isMerge && charactersFile) {
         try {
           const charactersText = await charactersFile.async('text');
           const characters: Character[] = JSON.parse(charactersText);
@@ -2005,7 +2074,7 @@ export const useImportRuleset = () => {
 
       // Import campaigns and related data (after characters, since campaignCharacters reference characterId)
       const campaignsFile = getZipFile('application data/campaigns.json');
-      if (campaignsFile) {
+      if (!isMerge && campaignsFile) {
         try {
           const campaignsText = await campaignsFile.async('text');
           const campaignsToImport: Campaign[] = JSON.parse(campaignsText);
@@ -2180,7 +2249,7 @@ export const useImportRuleset = () => {
             archetypesToAdd.push(newArchetype);
           }
           if (archetypesToAdd.length > 0) {
-            await bulkAddInChunks(db.archetypes, archetypesToAdd);
+            await bulkWrite(db.archetypes, archetypesToAdd);
             importedCounts.archetypes = archetypesToAdd.length;
           }
         } catch (error) {
@@ -2213,7 +2282,7 @@ export const useImportRuleset = () => {
                 updatedAt: now,
               }),
             );
-            await bulkAddInChunks(db.archetypeCustomProperties, toAdd);
+            await bulkWrite(db.archetypeCustomProperties, toAdd);
             importedCounts.archetypeCustomProperties = toAdd.length;
           } else {
             allErrors.push(...validation.errors);
@@ -2230,7 +2299,23 @@ export const useImportRuleset = () => {
       setImportStep('Creating ruleset');
 
       // Create ruleset after importing characters so test character isn't duplicated (skip when content-only import)
-      if (!options?.contentOnlyIntoRulesetId) {
+      if (isMerge) {
+        const existingRow = await db.rulesets.get(newRulesetId);
+        if (existingRow) {
+          const base = stripInjectedRulesetReadFields(existingRow);
+          await db.rulesets.put({
+            ...base,
+            version: newRuleset.version,
+            title: newRuleset.title,
+            description: newRuleset.description,
+            palette: newRuleset.palette,
+            details: newRuleset.details,
+            isModule: newRuleset.isModule,
+            assetId: newRuleset.assetId ?? base.assetId,
+            updatedAt: now,
+          });
+        }
+      } else if (!options?.contentOnlyIntoRulesetId) {
         await createRuleset(newRuleset);
       }
 
@@ -2238,6 +2323,9 @@ export const useImportRuleset = () => {
 
       // Import scripts after all entities are created (so we can link scripts to entities)
       try {
+        if (isMerge) {
+          await db.scripts.where('rulesetId').equals(newRulesetId).delete();
+        }
         const scriptFiles = await extractScriptFiles(zipContent, pathPrefix);
         const scriptMetadata = metadata.scripts || [];
 

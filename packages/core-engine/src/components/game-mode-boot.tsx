@@ -14,12 +14,12 @@ export function GameModeBoot({ children }: Props) {
   const rulesetCount = useLiveQuery(() => db.rulesets.count(), []);
   const { importRuleset, importStep } = useImportRuleset();
   const [error, setError] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(GAME_MODE);
   const importTriggered = useRef(false);
 
   useEffect(() => {
     if (!GAME_MODE) return;
     if (rulesetCount === undefined) return;
-    if (rulesetCount > 0) return;
     if (importTriggered.current) return;
 
     importTriggered.current = true;
@@ -30,12 +30,22 @@ export function GameModeBoot({ children }: Props) {
         if (!response.ok) throw new Error(`Failed to fetch ruleset (${response.status})`);
         const blob = await response.blob();
         const file = new File([blob], 'ruleset.zip', { type: 'application/zip' });
-        const result = await importRuleset(file, { forceReplace: false });
-        if (!result.success) {
-          setError(result.message || 'Import failed.');
+
+        if (rulesetCount === 0) {
+          const result = await importRuleset(file, { forceReplace: false });
+          if (!result.success) {
+            setError(result.message || 'Import failed.');
+          }
+        } else {
+          const result = await importRuleset(file, { mergeIfNewer: true });
+          if (!result.success) {
+            setError(result.message || 'Update check failed.');
+          }
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load ruleset.');
+      } finally {
+        setIsChecking(false);
       }
     };
 
@@ -55,7 +65,7 @@ export function GameModeBoot({ children }: Props) {
     );
   }
 
-  if (rulesetCount === undefined || (rulesetCount === 0 && !error)) {
+  if (isChecking) {
     return (
       <div className='flex h-screen w-screen flex-col items-center justify-center gap-2'>
         <Loading />
