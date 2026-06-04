@@ -6,8 +6,14 @@ import App from './App.tsx';
 import './index.css';
 import { initAnalytics } from './lib/analytics';
 import './stores/loggers/global-error-handler';
+import { usePwaInstallStore, type BeforeInstallPromptEvent } from './stores';
 
 initAnalytics();
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  usePwaInstallStore.getState().setDeferredPrompt(e as unknown as BeforeInstallPromptEvent);
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
