@@ -1,6 +1,6 @@
 {
   "name": "@quest-bound/runtime",
-  "version": "2.2.35",
+  "version": "2.2.36",
   "type": "module",
   "files": [
     "src",
@@ -43,15 +43,15 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@quest-bound/cloud": "^2.2.35",
-    "@quest-bound/local-db": "^2.2.35",
-    "@quest-bound/types": "^2.2.35",
+    "@quest-bound/cloud": "^2.2.36",
+    "@quest-bound/local-db": "^2.2.36",
+    "@quest-bound/types": "^2.2.36",
     "react-qr-code": "^2.0.21"
   },
   "peerDependencies": {
-    "@quest-bound/cloud": "^2.2.35",
-    "@quest-bound/local-db": "^2.2.35",
-    "@quest-bound/types": "^2.2.35",
+    "@quest-bound/cloud": "^2.2.36",
+    "@quest-bound/local-db": "^2.2.36",
+    "@quest-bound/types": "^2.2.36",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.8.2"
