@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "npm run dev -w @quest-bound/core-engine",
+    "dev:game": "npm run dev:game -w @quest-bound/core-engine",
     "dev:https-setup": "tsx scripts/dev-https-setup.ts",
     "build": "tsc -b && npm run build -w @quest-bound/core-engine",
     "lint": "eslint .",

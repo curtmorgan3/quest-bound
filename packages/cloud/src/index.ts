@@ -3,4 +3,4 @@
  */
 export { cloudClient, isCloudConfigured } from './client';
 export { CloudSyncActions, type CloudSyncActionsRef } from './cloud-sync-actions';
-export { checkGameAuthorization } from './game-auth';
+export { checkGameAuthorization, fetchGameRecord, type GameRecord } from './game-auth';

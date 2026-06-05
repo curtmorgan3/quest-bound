@@ -12,6 +12,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:game": "vite --mode game",
     "build": "vite build && cp ../../robots.txt ./dist/robots.txt",
     "build:game": "cp game-assets/ruleset.zip public/game-ruleset.zip && (cp game-assets/icon.png public/icons/game-icon.png 2>/dev/null || true) && VITE_GAME_MODE=true vite build --mode game && cp ../../robots.txt ./dist/robots.txt",
     "deploy:game": "./deploy-game.sh",

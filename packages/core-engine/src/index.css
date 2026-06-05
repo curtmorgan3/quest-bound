@@ -160,6 +160,11 @@ html {
   display: block;
 }
 
+.md-content hr {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
 .cm-tooltip-autocomplete {
   background-color: #2a2a2a !important;
   border-radius: 6px !important;

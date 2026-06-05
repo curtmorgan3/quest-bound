@@ -21,7 +21,16 @@ export function useGameAuthorization(): boolean | null {
   );
 
   useEffect(() => {
-    if (!isGameMode || !isAuthenticated || !cloudUser?.id || !cacheKey) {
+    if (!isGameMode || !isAuthenticated || !cloudUser?.id) {
+      setAuthorized(null);
+      return;
+    }
+    // No GAME_ID means the feature flag is being used locally — auto-authorize.
+    if (!GAME_ID) {
+      setAuthorized(true);
+      return;
+    }
+    if (!cacheKey) {
       setAuthorized(null);
       return;
     }
