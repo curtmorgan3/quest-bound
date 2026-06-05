@@ -1,22 +1,12 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components';
-import { checkGameAuthorization } from '@/lib/cloud';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { SignInSignUpModal } from '@quest-bound/core-ui/signin';
-import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { GAME_ID } from '../game-mode';
+import { useGameAuthorization } from '../hooks/use-game-authorization';
 
 export function GameAuthGuard() {
-  const { isAuthenticated, isLoading, cloudUser } = useCloudAuthStore();
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (!isAuthenticated || !cloudUser?.id) {
-      setAuthorized(null);
-      return;
-    }
-    checkGameAuthorization(GAME_ID, cloudUser.id).then(setAuthorized);
-  }, [isAuthenticated, cloudUser?.id]);
+  const { isAuthenticated, isLoading } = useCloudAuthStore();
+  const authorized = useGameAuthorization();
 
   if (isLoading) return null;
 
