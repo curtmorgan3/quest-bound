@@ -10,6 +10,7 @@ export * from './use-import';
 export * from './use-import-chart';
 export * from './use-import-campaign';
 export * from './use-import-character';
+export * from './peek-ruleset-bundle-metadata';
 export * from './use-import-ruleset';
 export * from './script-utils';
 export * from './script-export';
