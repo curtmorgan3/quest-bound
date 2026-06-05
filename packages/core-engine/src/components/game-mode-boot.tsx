@@ -9,6 +9,9 @@ import { useGameAuthorization } from '../hooks/use-game-authorization';
 import { useGameMode } from '../hooks/use-game-mode';
 import { GamePreviewLanding } from './game-preview-landing';
 
+// Ensure auth is initialized even when Layout (which normally calls init) is bypassed.
+useCloudAuthStore.getState().init();
+
 interface Props {
   children: React.ReactNode;
 }

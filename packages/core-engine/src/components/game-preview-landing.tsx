@@ -5,7 +5,7 @@ import type { RulesetBundlePreview } from '@/lib/compass-api';
 import { fetchGameRecord, type GameRecord } from '@/lib/cloud';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { SignInSignUpModal } from '@quest-bound/core-ui/signin';
-import { ChevronLeft, ChevronRight, ExternalLink, Loader2, LogIn, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ExternalLink, Loader2, ShoppingBag } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 import { GAME_ID } from '../game-mode';
 import { useGameAuthorization } from '../hooks/use-game-authorization';
@@ -71,8 +71,6 @@ export function GamePreviewLanding({ preview }: Props) {
   const [recordFetched, setRecordFetched] = useState(false);
   const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
 
-  console.log('id: ', GAME_ID)
-
   useEffect(() => {
     if (GAME_ID) {
       fetchGameRecord(GAME_ID)
@@ -96,8 +94,7 @@ export function GamePreviewLanding({ preview }: Props) {
       return (
         <>
           <Button className='w-full gap-2' onClick={() => setSignInOpen(true)}>
-            <LogIn className='h-4 w-4' />
-            Sign in to play
+            Sign into Quest Bound
           </Button>
           <SignInSignUpModal
             open={signInOpen}
@@ -125,17 +122,35 @@ export function GamePreviewLanding({ preview }: Props) {
         );
       }
 
+      if (gameRecord.includedWithSubscription) {
+        return (
+          <>
+            <p className='text-xs uppercase tracking-wider text-muted-foreground'>Get access</p>
+            <span className='text-3xl font-bold'>Free to Patreon Members</span>
+            <Button className='w-full' asChild>
+              <a
+                href='https://www.patreon.com/cw/QuestBoundEngine/membership'
+                target='_blank'
+                rel='noopener noreferrer'>
+                Join on Patreon
+              </a>
+            </Button>
+          </>
+        );
+      }
+
       const effectivePrice = gameRecord.salePrice ?? gameRecord.price;
-      const marketplaceUrl = gameRecord.orgSlug
-        ? `https://marketplace.questbound.com/${gameRecord.orgSlug}/g/${gameRecord.slug}`
-        : null;
+      const isFree = effectivePrice === 0;
+      const marketplaceUrl = gameRecord.stripeStorefrontUrl ?? null;
 
       return (
         <>
           <p className='text-xs uppercase tracking-wider text-muted-foreground'>Get access</p>
           <div className='flex items-baseline gap-2'>
-            <span className='text-3xl font-bold tabular-nums'>${effectivePrice.toFixed(2)}</span>
-            <span className='text-sm text-muted-foreground'>USD</span>
+            <span className='text-3xl font-bold tabular-nums'>
+              {isFree ? 'Free' : `$${effectivePrice.toFixed(2)}`}
+            </span>
+            {!isFree && <span className='text-sm text-muted-foreground'>USD</span>}
             {gameRecord.salePrice !== null && (
               <span className='ml-1 text-base tabular-nums text-muted-foreground line-through'>
                 ${gameRecord.price.toFixed(2)}
@@ -146,7 +161,7 @@ export function GamePreviewLanding({ preview }: Props) {
             <Button className='w-full gap-2' asChild>
               <a href={marketplaceUrl} target='_blank' rel='noopener noreferrer'>
                 <ShoppingBag className='h-4 w-4' />
-                Get access — ${effectivePrice.toFixed(2)}
+                Purchase
               </a>
             </Button>
           ) : (

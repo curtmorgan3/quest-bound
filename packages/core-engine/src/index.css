@@ -108,6 +108,8 @@ html {
 .md-content h3 {
   font-size: 18px;
   font-weight: normal;
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 .md-content h4 {

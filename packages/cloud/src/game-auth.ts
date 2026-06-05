@@ -27,6 +27,8 @@ export interface GameRecord {
   updatedAt: string | null;
   slug: string;
   orgSlug: string | null;
+  stripeStorefrontUrl: string | null;
+  includedWithSubscription: boolean;
 }
 
 export async function fetchGameRecord(gameId: string): Promise<GameRecord | null> {
@@ -34,7 +36,7 @@ export async function fetchGameRecord(gameId: string): Promise<GameRecord | null
   const { data, error } = await cloudClient
     .from('games')
     .select(
-      'title, description, header, version, price, sale_price, cover_image_url, carousel_assets, links, publisher_name, release_date, updated_at, slug, organizations(slug)',
+      'title, description, header, version, price, sale_price, cover_image_url, carousel_assets, links, publisher_name, release_date, updated_at, slug, stripe_storefront_url, included_with_subscription, organizations(slug)',
     )
     .eq('id', gameId)
     .maybeSingle();
@@ -53,6 +55,8 @@ export async function fetchGameRecord(gameId: string): Promise<GameRecord | null
     release_date: string | null;
     updated_at: string | null;
     slug: string;
+    stripe_storefront_url: string | null;
+    included_with_subscription: boolean;
     organizations: { slug: string } | { slug: string }[] | null;
   };
   const org = Array.isArray(raw.organizations) ? raw.organizations[0] : raw.organizations;
@@ -71,5 +75,7 @@ export async function fetchGameRecord(gameId: string): Promise<GameRecord | null
     updatedAt: raw.updated_at ?? null,
     slug: raw.slug ?? '',
     orgSlug: org?.slug ?? null,
+    stripeStorefrontUrl: raw.stripe_storefront_url ?? null,
+    includedWithSubscription: raw.included_with_subscription ?? false,
   };
 }
