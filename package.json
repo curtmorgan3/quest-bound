@@ -1,7 +1,7 @@
 {
   "name": "quest-bound",
   "private": true,
-  "version": "2.2.36",
+  "version": "2.2.37",
   "type": "module",
   "workspaces": [
     "packages/*"
