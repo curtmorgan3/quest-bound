@@ -6,9 +6,11 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useActiveRuleset, useCampaign, useCharacter } from '@/lib/compass-api';
+import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { Clapperboard, NotebookPen, User, UserRoundPen } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { GAME_MODE } from '../../game-mode';
 import { CampaignSettings } from './campaign-settings';
 import { CharacterSettings } from './character-settings';
 import { RulesetSettings } from './ruleset-settings';
@@ -21,12 +23,13 @@ export const Settings = () => {
   const { activeRuleset } = useActiveRuleset();
   const { character } = useCharacter();
   const campaign = useCampaign(campaignId);
+  const isAuthenticated = useCloudAuthStore((s) => s.isAuthenticated);
 
   const isOnRulesetRoute = Boolean(rulesetId && rulesetId !== 'undefined');
   const isOnCampaignRoute = Boolean(campaignId && campaignId !== 'undefined');
 
   const showRulesetSettings =
-    !isQbBundler && isOnRulesetRoute && Boolean(activeRuleset);
+    !isQbBundler && isOnRulesetRoute && Boolean(activeRuleset) && (!GAME_MODE || isAuthenticated);
 
   const [page, setPage] = useState<string>('user');
   const prevParamsRef = useRef({ rulesetId, campaignId, characterId });
