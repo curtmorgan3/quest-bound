@@ -5,8 +5,8 @@ import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { db } from '@quest-bound/local-db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useRef, useState } from 'react';
-import { GAME_MODE } from '../game-mode';
 import { useGameAuthorization } from '../hooks/use-game-authorization';
+import { useGameMode } from '../hooks/use-game-mode';
 import { GamePreviewLanding } from './game-preview-landing';
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
 }
 
 export function GameModeBoot({ children }: Props) {
+  const isGameMode = useGameMode();
   const rulesetCount = useLiveQuery(() => db.rulesets.count(), []);
   const { importRuleset, importStep } = useImportRuleset();
   const importRulesetRef = useRef(importRuleset);
@@ -32,7 +33,7 @@ export function GameModeBoot({ children }: Props) {
 
   // Step 1: Fetch the bundle zip once the DB count is known.
   useEffect(() => {
-    if (!GAME_MODE) return;
+    if (!isGameMode) return;
     if (rulesetCount === undefined) return;
     if (fetchTriggered.current) return;
     fetchTriggered.current = true;
@@ -57,13 +58,13 @@ export function GameModeBoot({ children }: Props) {
     };
 
     void run();
-  }, [rulesetCount]);
+  }, [isGameMode, rulesetCount]);
 
   // Step 2: Trigger install when the bundle is ready and conditions are met:
   //   - Returning user (rulesetCount > 0): merge immediately regardless of auth state.
   //   - New user (rulesetCount === 0): wait for authorization.
   useEffect(() => {
-    if (!GAME_MODE) return;
+    if (!isGameMode) return;
     if (!bundleFile) return;
     if (rulesetCount === undefined) return;
     if (installTriggered.current) return;
@@ -91,9 +92,9 @@ export function GameModeBoot({ children }: Props) {
       .finally(() => {
         setIsInstalling(false);
       });
-  }, [bundleFile, rulesetCount, isGameAuthorized, isAuthLoading]);
+  }, [isGameMode, bundleFile, rulesetCount, isGameAuthorized, isAuthLoading]);
 
-  if (!GAME_MODE) return <>{children}</>;
+  if (!isGameMode) return <>{children}</>;
 
   if (error) {
     return (

@@ -2,16 +2,17 @@ import { Card } from '@/components';
 import { MarkdownViewer, PageWrapper } from '@/components/composites';
 import { LogoIcon } from '@/components/ui/logo-icon';
 import { useActiveRuleset } from '@/lib/compass-api';
+import { useGameMode } from '@/hooks/use-game-mode';
 import { Map, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const isQbBundler = import.meta.env.VITE_QB_BUNDLE === '1';
-const isGameMode = import.meta.env.VITE_GAME_MODE === 'true';
 const editMode = import.meta.env.VITE_EDIT_MODE !== 'false';
-const showModifyLink = !isQbBundler && (!isGameMode || editMode);
 
 export function RulesetLanding() {
   const { activeRuleset } = useActiveRuleset();
+  const isGameMode = useGameMode();
+  const showModifyLink = !isQbBundler && (!isGameMode || editMode);
 
   if (!activeRuleset) {
     return (

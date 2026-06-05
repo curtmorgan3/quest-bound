@@ -9,8 +9,8 @@ import { useActiveRuleset, useCampaign, useCharacter } from '@/lib/compass-api';
 import { Clapperboard, NotebookPen, User, UserRoundPen } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { GAME_MODE } from '../../game-mode';
 import { useGameAuthorization } from '../../hooks/use-game-authorization';
+import { useGameMode } from '../../hooks/use-game-mode';
 import { CampaignSettings } from './campaign-settings';
 import { CharacterSettings } from './character-settings';
 import { RulesetSettings } from './ruleset-settings';
@@ -24,12 +24,13 @@ export const Settings = () => {
   const { character } = useCharacter();
   const campaign = useCampaign(campaignId);
   const isGameAuthorized = useGameAuthorization();
+  const isGameMode = useGameMode();
 
   const isOnRulesetRoute = Boolean(rulesetId && rulesetId !== 'undefined');
   const isOnCampaignRoute = Boolean(campaignId && campaignId !== 'undefined');
 
   const showRulesetSettings =
-    !isQbBundler && isOnRulesetRoute && Boolean(activeRuleset) && (!GAME_MODE || isGameAuthorized === true);
+    !isQbBundler && isOnRulesetRoute && Boolean(activeRuleset) && (!isGameMode || isGameAuthorized === true);
 
   const [page, setPage] = useState<string>('user');
   const prevParamsRef = useRef({ rulesetId, campaignId, characterId });

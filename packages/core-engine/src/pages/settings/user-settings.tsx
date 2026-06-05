@@ -53,6 +53,7 @@ import {
   User,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useGameMode } from '../../hooks/use-game-mode';
 import { CloudAccountSettings } from './cloud-account-settings';
 
 const QB_CLOUD_BETA_FORM_URL = 'https://forms.gle/yMqY41qBjCkdRfX6A';
@@ -420,7 +421,7 @@ export const UserSettings = () => {
     }
   };
 
-  const isGameMode = import.meta.env.VITE_GAME_MODE === 'true';
+  const isGameMode = useGameMode();
 
   if (!currentUser) return null;
 

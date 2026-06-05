@@ -29,7 +29,8 @@ import { DocumentViewer } from './pages/ruleset/documents';
 import { WindowEditor } from './pages/ruleset/windows/window-editor';
 import { GameAuthGuard } from './components/game-auth-guard';
 import { GameModeBoot } from './components/game-mode-boot';
-import { EDIT_MODE, GAME_MODE } from './game-mode';
+import { EDIT_MODE } from './game-mode';
+import { useGameMode } from './hooks/use-game-mode';
 
 function GameLandingRedirect() {
   const rulesets = useLiveQuery(() => db.rulesets.toArray(), []);
@@ -119,11 +120,12 @@ function GameRoutes() {
 }
 
 function CompassRoutes() {
+  const isGameMode = useGameMode();
   return (
     <ErrorBoundary showDetails>
       <BrowserRouter>
         <GameModeBoot>
-          {GAME_MODE ? (
+          {isGameMode ? (
             <GameRoutes />
           ) : (
             <Routes>

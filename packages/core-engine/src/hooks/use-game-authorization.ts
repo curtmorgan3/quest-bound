@@ -1,7 +1,8 @@
 import { checkGameAuthorization } from '@/lib/cloud';
 import { useCloudAuthStore } from '@/stores/cloud-auth-store';
 import { useEffect, useState } from 'react';
-import { GAME_ID, GAME_MODE } from '../game-mode';
+import { GAME_ID } from '../game-mode';
+import { useGameMode } from './use-game-mode';
 
 const authCache = new Map<string, boolean>();
 
@@ -11,6 +12,7 @@ const authCache = new Map<string, boolean>();
  * No-ops outside of game mode (returns null).
  */
 export function useGameAuthorization(): boolean | null {
+  const isGameMode = useGameMode();
   const { isAuthenticated, cloudUser } = useCloudAuthStore();
   const cacheKey = GAME_ID && cloudUser?.id ? `${GAME_ID}:${cloudUser.id}` : null;
 
@@ -19,7 +21,7 @@ export function useGameAuthorization(): boolean | null {
   );
 
   useEffect(() => {
-    if (!GAME_MODE || !isAuthenticated || !cloudUser?.id || !cacheKey) {
+    if (!isGameMode || !isAuthenticated || !cloudUser?.id || !cacheKey) {
       setAuthorized(null);
       return;
     }
@@ -31,7 +33,7 @@ export function useGameAuthorization(): boolean | null {
       authCache.set(cacheKey, result);
       setAuthorized(result);
     });
-  }, [isAuthenticated, cloudUser?.id, cacheKey]);
+  }, [isGameMode, isAuthenticated, cloudUser?.id, cacheKey]);
 
   return authorized;
 }
