@@ -26,6 +26,9 @@ export type SetItemActionIdsFn = (actionIds: string[]) => void;
 /** Callback to persist equipped flag after a successful on_equip / on_unequip run. */
 export type SetItemEquippedFn = (isEquipped: boolean) => void;
 
+/** Callback to persist a quantity change for an inventory item instance. */
+export type SetItemQuantityFn = (quantity: number) => void;
+
 /** Lookup to resolve action name -> action id for addAction/removeAction. */
 export type GetActionIdByNameFn = (name: string) => string | undefined;
 
@@ -81,6 +84,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   private readonly onSetDescription?: SetItemDescriptionFn;
   private readonly onSetActionIds?: SetItemActionIdsFn;
   private readonly onSetEquipped?: SetItemEquippedFn;
+  private readonly onSetQuantity?: SetItemQuantityFn;
   private readonly getActionIdByName?: GetActionIdByNameFn;
   private readonly onDestroy?: DestroyItemInstanceFn;
   private readonly executeItemEvent?: ExecuteItemEventFn;
@@ -99,6 +103,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     getActionIdByName?: GetActionIdByNameFn,
     onSetEquipped?: SetItemEquippedFn,
     executeItemEvent?: ExecuteItemEventFn,
+    onSetQuantity?: SetItemQuantityFn,
   ) {
     this.inventoryItem = inventoryItem;
     this.item = item;
@@ -113,6 +118,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     this.onSetEquipped = onSetEquipped;
     this.getActionIdByName = getActionIdByName;
     this.executeItemEvent = executeItemEvent;
+    this.onSetQuantity = onSetQuantity;
   }
 
   /**
@@ -152,6 +158,12 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
 
   count(): number {
     return this.quantity;
+  }
+
+  setQuantity(value: number): void {
+    if (value < 0) throw new Error('quantity must be >= 0');
+    this.inventoryItem.quantity = value;
+    this.onSetQuantity?.(value);
   }
 
   get isEquipped(): boolean {
@@ -399,6 +411,7 @@ export function createItemInstanceProxy(
   getActionIdByName?: GetActionIdByNameFn,
   onSetEquipped?: SetItemEquippedFn,
   executeItemEvent?: ExecuteItemEventFn,
+  onSetQuantity?: SetItemQuantityFn,
 ): ItemInstanceProxy {
   const lookup = createCustomPropertyLookup(customProperties);
   return new ItemInstanceProxy(
@@ -415,5 +428,6 @@ export function createItemInstanceProxy(
     getActionIdByName,
     onSetEquipped,
     executeItemEvent,
+    onSetQuantity,
   );
 }

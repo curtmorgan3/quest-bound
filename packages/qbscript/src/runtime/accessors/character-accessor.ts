@@ -14,7 +14,7 @@ import type {
 import type Dexie from 'dexie';
 import type { ExecuteActionEventFn, ExecuteItemEventFn } from '../proxies';
 import { ActionProxy, AttributeProxy, createItemInstanceProxy } from '../proxies';
-import type { SetItemEquippedFn } from '../proxies/item-instance-proxy';
+import type { SetItemEquippedFn, SetItemQuantityFn } from '../proxies/item-instance-proxy';
 import type { SheetComponentAccessor } from '../sheet-ui/sheet-component-accessor';
 import type { SheetUiCoordinator } from '../sheet-ui/sheet-ui-coordinator';
 import type { StructuredCloneSafe } from '../structured-clone-safe';
@@ -471,6 +471,10 @@ export class CharacterAccessor implements StructuredCloneSafe {
     const getActionIdByName = (actionName: string) =>
       Array.from(this.actionsCache.values()).find((a) => a.title === actionName)?.id;
     const onDestroy = () => this.removeItemByInstanceId(inventoryItem.id);
+    const onSetQuantity: SetItemQuantityFn = (quantity: number) => {
+      inventoryItem.quantity = quantity;
+      this.pendingUpdates.set(`inventoryUpdate:${inventoryItem.id}`, getMergedUpdate({ quantity }));
+    };
     return createItemInstanceProxy(
       inventoryItem,
       item,
@@ -484,6 +488,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
       getActionIdByName,
       onSetEquipped,
       this.executeItemEvent,
+      onSetQuantity,
     );
   }
 
