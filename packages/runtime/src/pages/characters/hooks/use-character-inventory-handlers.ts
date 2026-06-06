@@ -91,7 +91,7 @@ export const useCharacterInventoryHandlers = ({
       }
       return;
     }
-    executeItemEvent(
+    await executeItemEvent(
       rulesetItemId,
       character.id,
       event,
