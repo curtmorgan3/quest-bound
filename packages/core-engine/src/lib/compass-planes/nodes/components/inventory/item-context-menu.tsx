@@ -76,8 +76,12 @@ export const ItemContextMenu = ({
     .filter((a): a is NonNullable<typeof a> => Boolean(a?.scriptId));
 
   const [quantity, setQuantity] = useState(item.quantity);
-
   const [splitAmount, setSplitAmount] = useState(Math.floor(item.quantity / 2));
+
+  useEffect(() => {
+    setQuantity(item.quantity);
+    setSplitAmount(Math.floor(item.quantity / 2));
+  }, [item.quantity]);
   const { rollDice } = useContext(DiceContext);
   const menuRef = useRef<HTMLDivElement>(null);
   const maxQuantity = item.stackSize;
