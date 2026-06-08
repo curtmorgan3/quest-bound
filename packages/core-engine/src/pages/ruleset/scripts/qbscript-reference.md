@@ -30,9 +30,9 @@ A comprehensive guide to QBScript, the scripting language for automating Quest B
 Numeric literals are written as integers or decimals. No type declaration is needed.
 
 ```javascript
-health = 100;
-ratio = 3.14;
-level = 5;
+health = 100
+ratio = 3.14
+level = 5
 ```
 
 ### Strings
@@ -40,9 +40,9 @@ level = 5;
 Use single or double quotes. Prefer double quotes when the text contains apostrophes.
 
 ```javascript
-name = 'Fireball';
-message = "Tabby's Tavern";
-empty = '';
+name = 'Fireball'
+message = "Tabby's Tavern"
+empty = ''
 ```
 
 **String methods:**
@@ -119,9 +119,9 @@ Division is always floating-point. For integer division, use `floor(a / b)`.
 Variables are created by assignment. No keyword (e.g. `let` or `var`) is used.
 
 ```javascript
-hit_points = Owner.Attribute('Hit Points').value;
-damage = 10;
-name = 'Fireball';
+hit_points = Owner.Attribute('Hit Points').value
+damage = 10
+name = 'Fireball'
 ```
 
 - Assignment creates the variable in the current scope if it does not exist, or updates it if it does.
