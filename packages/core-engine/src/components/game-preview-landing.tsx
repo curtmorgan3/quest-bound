@@ -194,10 +194,14 @@ export function GamePreviewLanding({ preview }: Props) {
       contentClassName='p-0'
       stickyHeader
       headerActions={
-        <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+        <a
+          href='https://questbound.com'
+          target='_blank'
+          rel='noopener noreferrer'
+          className='flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground'>
           <span>Made with Quest Bound</span>
           <LogoIcon style={{ width: 24, height: 24 }} />
-        </div>
+        </a>
       }>
       <div className='mx-auto w-full max-w-5xl px-6 py-6 lg:px-8 lg:py-8'>
         <div className='grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]'>
@@ -327,7 +331,7 @@ export function GamePreviewLanding({ preview }: Props) {
           </div>
 
           {/* RIGHT — sticky buy box */}
-          <aside>
+          <aside className='order-first lg:order-none'>
             <div className='sticky top-8 overflow-hidden rounded-md border shadow-md'>
               {/* Cover image */}
               <div

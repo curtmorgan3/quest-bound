@@ -121,7 +121,14 @@ export function GameModeBoot({ children }: Props) {
 
   // New user flow.
   if (rulesetCount === 0) {
-    // Bundle not fetched yet.
+    // Show the preview landing immediately — the bundle zip fetches in the background.
+    // isGameAuthorized === null means auth is still loading; show landing anyway so the
+    // Supabase game-record fetch and UI render can start without waiting for the zip.
+    if (!isInstalling && isGameAuthorized !== true) {
+      return <GamePreviewLanding preview={preview} />;
+    }
+
+    // Authorized but the zip hasn't arrived yet (user authenticated before the download finished).
     if (!bundleFile) {
       return (
         <div className='flex h-screen w-screen items-center justify-center'>
@@ -138,11 +145,6 @@ export function GameModeBoot({ children }: Props) {
           {importStep && <p className='text-sm text-muted-foreground'>{importStep}...</p>}
         </div>
       );
-    }
-
-    // Not yet authorized — show the preview landing.
-    if (isGameAuthorized !== true) {
-      return <GamePreviewLanding preview={preview} />;
     }
 
     // Authorized but install hasn't started yet (brief frame before effect fires).
