@@ -475,6 +475,15 @@ export class CharacterAccessor implements StructuredCloneSafe {
       inventoryItem.quantity = quantity;
       this.pendingUpdates.set(`inventoryUpdate:${inventoryItem.id}`, getMergedUpdate({ quantity }));
     };
+    let inventoryReferenceId: string | undefined;
+    if (this.refLabelToComponentId) {
+      for (const [label, compId] of this.refLabelToComponentId) {
+        if (compId === inventoryItem.componentId) {
+          inventoryReferenceId = label;
+          break;
+        }
+      }
+    }
     return createItemInstanceProxy(
       inventoryItem,
       item,
@@ -489,6 +498,7 @@ export class CharacterAccessor implements StructuredCloneSafe {
       onSetEquipped,
       this.executeItemEvent,
       onSetQuantity,
+      inventoryReferenceId,
     );
   }
 

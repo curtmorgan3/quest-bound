@@ -63,6 +63,7 @@ const ITEM_INSTANCE_PROXY_RESERVED_PROPERTIES = new Set([
   'item',
   'constructor',
   'toStructuredCloneSafe',
+  'inventoryReferenceId',
 ]);
 
 function coerceItemInstanceSetValue(value: unknown): string | number | boolean {

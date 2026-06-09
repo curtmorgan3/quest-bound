@@ -61,6 +61,7 @@ export type ItemInstancePlain = {
   description: string;
   quantity: number;
   isEquipped: boolean;
+  inventoryReferenceId: string | undefined;
   [key: string]: string | number | boolean | undefined;
 };
 
@@ -88,6 +89,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
   private readonly getActionIdByName?: GetActionIdByNameFn;
   private readonly onDestroy?: DestroyItemInstanceFn;
   private readonly executeItemEvent?: ExecuteItemEventFn;
+  private readonly _inventoryReferenceId?: string;
 
   constructor(
     inventoryItem: InventoryItem,
@@ -104,6 +106,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     onSetEquipped?: SetItemEquippedFn,
     executeItemEvent?: ExecuteItemEventFn,
     onSetQuantity?: SetItemQuantityFn,
+    inventoryReferenceId?: string,
   ) {
     this.inventoryItem = inventoryItem;
     this.item = item;
@@ -119,6 +122,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
     this.getActionIdByName = getActionIdByName;
     this.executeItemEvent = executeItemEvent;
     this.onSetQuantity = onSetQuantity;
+    this._inventoryReferenceId = inventoryReferenceId;
   }
 
   /**
@@ -168,6 +172,11 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
 
   get isEquipped(): boolean {
     return this.inventoryItem.isEquipped ?? false;
+  }
+
+  /** Reference label of the inventory component this item belongs to (e.g. 'backpack'). Undefined if the component has no reference label set. */
+  get inventoryReferenceId(): string | undefined {
+    return this._inventoryReferenceId;
   }
 
   private emptyItemEventResult(): ExecuteActionEventResult {
@@ -381,6 +390,7 @@ export class ItemInstanceProxy implements StructuredCloneSafe {
       description: this.description,
       quantity: this.inventoryItem.quantity,
       isEquipped: this.inventoryItem.isEquipped ?? false,
+      inventoryReferenceId: this._inventoryReferenceId,
     };
     const instanceCustom = this.inventoryItem.customProperties ?? {};
     const byLabel: Record<string, string | number | boolean> = {};
@@ -412,6 +422,7 @@ export function createItemInstanceProxy(
   onSetEquipped?: SetItemEquippedFn,
   executeItemEvent?: ExecuteItemEventFn,
   onSetQuantity?: SetItemQuantityFn,
+  inventoryReferenceId?: string,
 ): ItemInstanceProxy {
   const lookup = createCustomPropertyLookup(customProperties);
   return new ItemInstanceProxy(
@@ -429,5 +440,6 @@ export function createItemInstanceProxy(
     onSetEquipped,
     executeItemEvent,
     onSetQuantity,
+    inventoryReferenceId,
   );
 }
